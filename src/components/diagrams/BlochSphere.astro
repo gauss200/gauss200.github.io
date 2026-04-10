@@ -1,0 +1,145 @@
+---
+// 3D Bloch sphere showing state evolution of a two-level quantum system
+// Uses Three.js for WebGL rendering
+---
+<div class="diagram-container">
+  <h3>Bloch Sphere — Two-Level System</h3>
+  <p class="diagram-desc">
+    The state of a coupled two-mode system maps to a point on the Bloch sphere.
+    Coupling (&kappa;) rotates around the x-axis; detuning rotates around z.
+  </p>
+  <div class="diagram-controls">
+    <label>
+      Coupling (&kappa;):
+      <input type="range" id="bloch-kappa" min="0" max="3" step="0.1" value="1" />
+    </label>
+    <label>
+      Detuning (&Delta;&beta;):
+      <input type="range" id="bloch-detuning" min="-2" max="2" step="0.1" value="0" />
+    </label>
+    <button id="bloch-reset">Reset</button>
+  </div>
+  <div id="bloch-sphere-canvas" style="width:100%;height:400px;"></div>
+</div>
+
+<style>
+  .diagram-container {
+    margin: 2rem 0;
+    padding: 1.5rem;
+    background: var(--color-card-bg);
+    border-radius: var(--border-radius);
+    box-shadow: 0 2px 8px var(--color-card-shadow);
+  }
+  .diagram-desc { color: var(--color-text-muted); font-size: 0.9rem; margin-bottom: 1rem; }
+  .diagram-controls { display: flex; gap: 2rem; margin-bottom: 1rem; flex-wrap: wrap; align-items: center; }
+  .diagram-controls label { font-size: 0.85rem; display: flex; align-items: center; gap: 0.5rem; }
+  .diagram-controls button {
+    padding: 0.25rem 0.75rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    background: var(--color-bg-secondary);
+    color: var(--color-text);
+    cursor: pointer;
+    font-size: 0.85rem;
+  }
+</style>
+
+<script>
+  import * as THREE from 'three';
+
+  const container = document.getElementById('bloch-sphere-canvas')!;
+  const kappaSlider = document.getElementById('bloch-kappa') as HTMLInputElement;
+  const detuningSlider = document.getElementById('bloch-detuning') as HTMLInputElement;
+  const resetBtn = document.getElementById('bloch-reset')!;
+
+  // Scene setup
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 100);
+  camera.position.set(2.5, 1.5, 2.5);
+  camera.lookAt(0, 0, 0);
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setSize(container.clientWidth, container.clientHeight);
+  renderer.setPixelRatio(window.devicePixelRatio);
+  container.appendChild(renderer.domElement);
+
+  // Sphere wireframe
+  const sphereGeo = new THREE.SphereGeometry(1, 32, 16);
+  const sphereMat = new THREE.MeshBasicMaterial({ color: 0x4488cc, wireframe: true, transparent: true, opacity: 0.15 });
+  scene.add(new THREE.Mesh(sphereGeo, sphereMat));
+
+  // Axes
+  const axisLen = 1.3;
+  const axes = [
+    { dir: new THREE.Vector3(1, 0, 0), color: 0xff4444, label: 'x' },
+    { dir: new THREE.Vector3(0, 1, 0), color: 0x44ff44, label: 'z' },
+    { dir: new THREE.Vector3(0, 0, 1), color: 0x4444ff, label: 'y' },
+  ];
+  axes.forEach(({ dir, color }) => {
+    const arrow = new THREE.ArrowHelper(dir, new THREE.Vector3(0, 0, 0), axisLen, color, 0.08, 0.04);
+    scene.add(arrow);
+  });
+
+  // State vector (the moving point)
+  const stateGeo = new THREE.SphereGeometry(0.06, 16, 16);
+  const stateMat = new THREE.MeshBasicMaterial({ color: 0xe8a640 });
+  const stateMesh = new THREE.Mesh(stateGeo, stateMat);
+  scene.add(stateMesh);
+
+  // Trail
+  const trailPoints: THREE.Vector3[] = [];
+  const trailGeo = new THREE.BufferGeometry();
+  const trailMat = new THREE.LineBasicMaterial({ color: 0xe8a640, transparent: true, opacity: 0.5 });
+  const trailLine = new THREE.Line(trailGeo, trailMat);
+  scene.add(trailLine);
+
+  // State: start at |0> = north pole = (0, 0, 1) in Bloch coords -> (0, 1, 0) in Three.js (y-up)
+  let theta = 0;
+  let phi = 0;
+  let t = 0;
+
+  resetBtn.addEventListener('click', () => {
+    theta = 0; phi = 0; t = 0;
+    trailPoints.length = 0;
+  });
+
+  function animate() {
+    const kappa = parseFloat(kappaSlider.value);
+    const detuning = parseFloat(detuningSlider.value);
+    const dt = 0.02;
+
+    // Bloch equations: simplified precession model
+    theta += 2 * kappa * dt;
+    phi += 2 * detuning * dt;
+    t += dt;
+
+    // Bloch sphere coords
+    const x = Math.sin(theta) * Math.cos(phi);
+    const z = Math.sin(theta) * Math.sin(phi);
+    const y = Math.cos(theta); // y-up in Three.js
+
+    stateMesh.position.set(x, y, z);
+
+    // Trail (keep last 500 points)
+    trailPoints.push(new THREE.Vector3(x, y, z));
+    if (trailPoints.length > 500) trailPoints.shift();
+    trailGeo.setFromPoints(trailPoints);
+
+    // Slowly orbit camera
+    const camAngle = t * 0.1;
+    camera.position.set(3 * Math.cos(camAngle), 1.5, 3 * Math.sin(camAngle));
+    camera.lookAt(0, 0, 0);
+
+    renderer.render(scene, camera);
+    requestAnimationFrame(animate);
+  }
+
+  animate();
+
+  // Resize handling
+  window.addEventListener('resize', () => {
+    camera.aspect = container.clientWidth / container.clientHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(container.clientWidth, container.clientHeight);
+  });
+</script>
