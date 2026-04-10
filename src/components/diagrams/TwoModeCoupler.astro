@@ -1,0 +1,435 @@
+---
+// Two coupled modes with full parameter control.
+// Sliders for kappa, delta-beta, beta, and initial amplitudes A1(0), A2(0).
+// Shows the propagating fields (carrier oscillations) and amplitude envelopes.
+//
+// CMT equations: d/dz [a1, a2]^T = -i [[beta+db/2, kappa],[kappa, beta-db/2]] [a1, a2]^T
+// Solution via eigenmode decomposition:
+//   Omega = sqrt(kappa^2 + (db/2)^2)
+//   mixing angle: tan(theta) = 2*kappa / db
+//   eigenvalues: beta +/- Omega
+---
+<div class="diagram-container">
+  <h3>Two Coupled Modes — Fields & Envelopes</h3>
+  <p class="diagram-desc">
+    Two modes coupled by &kappa; with propagation constants &beta; &pm; &Delta;&beta;/2.
+    Set initial amplitudes and watch the fields propagate and exchange energy.
+  </p>
+  <div class="diagram-controls">
+    <label>
+      &kappa;:
+      <input type="range" id="tm-kappa" min="0" max="4" step="0.05" value="1.5" />
+      <span id="tm-kappa-val">1.50</span>
+    </label>
+    <label>
+      &Delta;&beta;:
+      <input type="range" id="tm-db" min="0" max="4" step="0.05" value="0" />
+      <span id="tm-db-val">0.00</span>
+    </label>
+    <label>
+      &beta;:
+      <input type="range" id="tm-beta" min="2" max="20" step="0.5" value="10" />
+      <span id="tm-beta-val">10.0</span>
+    </label>
+    <label>
+      |A₁(0)|:
+      <input type="range" id="tm-a1" min="0" max="1" step="0.05" value="1" />
+      <span id="tm-a1-val">1.00</span>
+    </label>
+    <label>
+      |A₂(0)|:
+      <input type="range" id="tm-a2" min="0" max="1" step="0.05" value="0" />
+      <span id="tm-a2-val">0.00</span>
+    </label>
+  </div>
+  <canvas id="two-mode-coupler" width="800" height="500"></canvas>
+</div>
+
+<style>
+  .diagram-container {
+    margin: 2rem 0;
+    padding: 1.5rem;
+    background: var(--color-card-bg);
+    border-radius: var(--border-radius);
+    box-shadow: 0 2px 8px var(--color-card-shadow);
+  }
+  .diagram-desc {
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+  }
+  .diagram-controls {
+    display: flex;
+    gap: 1.25rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .diagram-controls label {
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  canvas {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: var(--border-radius);
+  }
+</style>
+
+<script>
+  const canvas = document.getElementById('two-mode-coupler') as HTMLCanvasElement;
+  const ctx = canvas.getContext('2d')!;
+
+  const sl = {
+    kappa: document.getElementById('tm-kappa') as HTMLInputElement,
+    db: document.getElementById('tm-db') as HTMLInputElement,
+    beta: document.getElementById('tm-beta') as HTMLInputElement,
+    a1: document.getElementById('tm-a1') as HTMLInputElement,
+    a2: document.getElementById('tm-a2') as HTMLInputElement,
+  };
+  const vl = {
+    kappa: document.getElementById('tm-kappa-val')!,
+    db: document.getElementById('tm-db-val')!,
+    beta: document.getElementById('tm-beta-val')!,
+    a1: document.getElementById('tm-a1-val')!,
+    a2: document.getElementById('tm-a2-val')!,
+  };
+
+  sl.kappa.addEventListener('input', () => vl.kappa.textContent = parseFloat(sl.kappa.value).toFixed(2));
+  sl.db.addEventListener('input', () => vl.db.textContent = parseFloat(sl.db.value).toFixed(2));
+  sl.beta.addEventListener('input', () => vl.beta.textContent = parseFloat(sl.beta.value).toFixed(1));
+  sl.a1.addEventListener('input', () => vl.a1.textContent = parseFloat(sl.a1.value).toFixed(2));
+  sl.a2.addEventListener('input', () => vl.a2.textContent = parseFloat(sl.a2.value).toFixed(2));
+
+  let time = 0;
+
+  // Solve CMT:
+  //   A = [[beta+db/2, kappa],[kappa, beta-db/2]]
+  //   Omega = sqrt(kappa^2 + (db/2)^2)
+  //   Eigenvectors rotated by mixing angle theta: tan(theta) = 2*kappa/db
+  //   eigenvalues: lambda_+ = beta + Omega, lambda_- = beta - Omega
+  //
+  //   [a1(z)] = exp(-i*A*z) * [a1(0)]
+  //   [a2(z)]                 [a2(0)]
+  //
+  // Decompose initial state into eigenmodes, propagate, reconstruct.
+
+  function solve(z: number, kappa: number, db: number, beta: number, a10: number, a20: number):
+    { a1Re: number; a1Im: number; a2Re: number; a2Im: number; env1: number; env2: number } {
+
+    if (kappa < 0.001 && Math.abs(db) < 0.001) {
+      // No coupling — just propagate with beta
+      const phase = beta * z;
+      return {
+        a1Re: a10 * Math.cos(phase), a1Im: -a10 * Math.sin(phase),
+        a2Re: a20 * Math.cos(phase), a2Im: -a20 * Math.sin(phase),
+        env1: a10, env2: a20,
+      };
+    }
+
+    const Omega = Math.sqrt(kappa * kappa + (db / 2) * (db / 2));
+
+    // Mixing angle
+    let cosT: number, sinT: number;
+    if (Math.abs(db) < 0.001) {
+      cosT = Math.SQRT1_2;
+      sinT = Math.SQRT1_2;
+    } else {
+      const theta = Math.atan2(2 * kappa, db);
+      cosT = Math.cos(theta / 2);
+      sinT = Math.sin(theta / 2);
+    }
+
+    // Eigenvalues
+    const lp = beta + Omega;
+    const lm = beta - Omega;
+
+    // Project initial state onto eigenmodes
+    // |+> = [cosT, sinT], |-> = [-sinT, cosT]
+    const cp = a10 * cosT + a20 * sinT;   // <+|psi0>
+    const cm = -a10 * sinT + a20 * cosT;  // <-|psi0>
+
+    // Propagate: c_pm * exp(-i * lambda_pm * z)
+    const cpRe = cp * Math.cos(lp * z);
+    const cpIm = -cp * Math.sin(lp * z);
+    const cmRe = cm * Math.cos(lm * z);
+    const cmIm = -cm * Math.sin(lm * z);
+
+    // Reconstruct in original basis
+    // a1 = cosT * c+ + (-sinT) * c-
+    // a2 = sinT * c+ + cosT * c-
+    const a1Re = cosT * cpRe + (-sinT) * cmRe;
+    const a1Im = cosT * cpIm + (-sinT) * cmIm;
+    const a2Re = sinT * cpRe + cosT * cmRe;
+    const a2Im = sinT * cpIm + cosT * cmIm;
+
+    const env1 = Math.sqrt(a1Re * a1Re + a1Im * a1Im);
+    const env2 = Math.sqrt(a2Re * a2Re + a2Im * a2Im);
+
+    return { a1Re, a1Im, a2Re, a2Im, env1, env2 };
+  }
+
+  function draw() {
+    const W = canvas.width;
+    const H = canvas.height;
+    const kappa = parseFloat(sl.kappa.value);
+    const db = parseFloat(sl.db.value);
+    const beta = parseFloat(sl.beta.value);
+    const a10 = parseFloat(sl.a1.value);
+    const a20 = parseFloat(sl.a2.value);
+
+    const isDark = document.documentElement.getAttribute('data-theme') === 'ds9';
+
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = isDark ? '#05050f' : '#fafafa';
+    ctx.fillRect(0, 0, W, H);
+
+    const color1 = isDark ? '#e8a640' : '#e63946';
+    const color2 = isDark ? '#64b5f6' : '#457b9d';
+    const envColor1 = isDark ? 'rgba(232,166,64,0.3)' : 'rgba(230,57,70,0.2)';
+    const envColor2 = isDark ? 'rgba(100,181,246,0.3)' : 'rgba(69,123,157,0.2)';
+    const envStroke1 = isDark ? 'rgba(232,166,64,0.6)' : 'rgba(230,57,70,0.5)';
+    const envStroke2 = isDark ? 'rgba(100,181,246,0.6)' : 'rgba(69,123,157,0.5)';
+    const textColor = isDark ? '#c8cad8' : '#1a1a1a';
+    const mutedColor = isDark ? '#7a7e9a' : '#888';
+    const axisColor = isDark ? '#1a1a4a' : '#e0e0e0';
+
+    const margin = { left: 45, right: 20, top: 12, bottom: 30 };
+    const plotW = W - margin.left - margin.right;
+    const totalZ = 10; // propagation range
+    const gap = 20;
+
+    // Three rows: Mode 1 field, Mode 2 field, Envelope plot
+    const rowH = (H - margin.top - margin.bottom - gap * 2) / 3;
+    const row1Top = margin.top;
+    const row2Top = margin.top + rowH + gap;
+    const row3Top = margin.top + 2 * (rowH + gap);
+
+    // Precompute solutions
+    const nPts = plotW;
+    const data: ReturnType<typeof solve>[] = [];
+    for (let px = 0; px <= nPts; px++) {
+      const z = (px / nPts) * totalZ;
+      data.push(solve(z + time * 0.8, kappa, db, beta, a10, a20));
+    }
+
+    // --- Row 1: Mode 1 field Re[a1(z)] ---
+    const mid1 = row1Top + rowH / 2;
+    const amp1Max = Math.max(a10, a20, 0.1);
+    const scale1 = rowH * 0.42 / amp1Max;
+
+    // Axis
+    ctx.strokeStyle = axisColor;
+    ctx.lineWidth = 0.5;
+    ctx.beginPath();
+    ctx.moveTo(margin.left, mid1);
+    ctx.lineTo(margin.left + plotW, mid1);
+    ctx.stroke();
+
+    // Envelope fill
+    ctx.beginPath();
+    for (let px = 0; px <= nPts; px++) {
+      const x = margin.left + px;
+      ctx.lineTo(x, mid1 - data[px].env1 * scale1);
+    }
+    for (let px = nPts; px >= 0; px--) {
+      const x = margin.left + px;
+      ctx.lineTo(x, mid1 + data[px].env1 * scale1);
+    }
+    ctx.closePath();
+    ctx.fillStyle = envColor1;
+    ctx.fill();
+
+    // Envelope lines
+    ctx.strokeStyle = envStroke1;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    for (let px = 0; px <= nPts; px++) {
+      const x = margin.left + px;
+      px === 0 ? ctx.moveTo(x, mid1 - data[px].env1 * scale1) : ctx.lineTo(x, mid1 - data[px].env1 * scale1);
+    }
+    ctx.stroke();
+    ctx.beginPath();
+    for (let px = 0; px <= nPts; px++) {
+      const x = margin.left + px;
+      px === 0 ? ctx.moveTo(x, mid1 + data[px].env1 * scale1) : ctx.lineTo(x, mid1 + data[px].env1 * scale1);
+    }
+    ctx.stroke();
+
+    // Field
+    ctx.beginPath();
+    ctx.strokeStyle = color1;
+    ctx.lineWidth = 1.5;
+    for (let px = 0; px <= nPts; px++) {
+      const x = margin.left + px;
+      const y = mid1 - data[px].a1Re * scale1;
+      px === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    // Label
+    ctx.fillStyle = color1;
+    ctx.font = '11px system-ui';
+    ctx.fillText('Mode 1', margin.left + 3, row1Top + 13);
+    ctx.fillStyle = mutedColor;
+    ctx.font = '10px system-ui';
+    ctx.fillText('Re[a₁(z)]', margin.left + 3, row1Top + 26);
+
+    // --- Row 2: Mode 2 field Re[a2(z)] ---
+    const mid2 = row2Top + rowH / 2;
+
+    ctx.strokeStyle = axisColor;
+    ctx.lineWidth = 0.5;
+    ctx.beginPath();
+    ctx.moveTo(margin.left, mid2);
+    ctx.lineTo(margin.left + plotW, mid2);
+    ctx.stroke();
+
+    // Envelope fill
+    ctx.beginPath();
+    for (let px = 0; px <= nPts; px++) {
+      const x = margin.left + px;
+      ctx.lineTo(x, mid2 - data[px].env2 * scale1);
+    }
+    for (let px = nPts; px >= 0; px--) {
+      const x = margin.left + px;
+      ctx.lineTo(x, mid2 + data[px].env2 * scale1);
+    }
+    ctx.closePath();
+    ctx.fillStyle = envColor2;
+    ctx.fill();
+
+    // Envelope lines
+    ctx.strokeStyle = envStroke2;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    for (let px = 0; px <= nPts; px++) {
+      const x = margin.left + px;
+      px === 0 ? ctx.moveTo(x, mid2 - data[px].env2 * scale1) : ctx.lineTo(x, mid2 - data[px].env2 * scale1);
+    }
+    ctx.stroke();
+    ctx.beginPath();
+    for (let px = 0; px <= nPts; px++) {
+      const x = margin.left + px;
+      px === 0 ? ctx.moveTo(x, mid2 + data[px].env2 * scale1) : ctx.lineTo(x, mid2 + data[px].env2 * scale1);
+    }
+    ctx.stroke();
+
+    // Field
+    ctx.beginPath();
+    ctx.strokeStyle = color2;
+    ctx.lineWidth = 1.5;
+    for (let px = 0; px <= nPts; px++) {
+      const x = margin.left + px;
+      const y = mid2 - data[px].a2Re * scale1;
+      px === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    ctx.fillStyle = color2;
+    ctx.font = '11px system-ui';
+    ctx.fillText('Mode 2', margin.left + 3, row2Top + 13);
+    ctx.fillStyle = mutedColor;
+    ctx.font = '10px system-ui';
+    ctx.fillText('Re[a₂(z)]', margin.left + 3, row2Top + 26);
+
+    // --- Row 3: Envelope intensities |a1|^2, |a2|^2 ---
+    const plotTop3 = row3Top;
+    const plotBot3 = row3Top + rowH;
+    const plotH3 = rowH;
+    const maxEnv2 = amp1Max * amp1Max;
+    const scale3 = plotH3 * 0.9 / Math.max(maxEnv2, 0.01);
+
+    // Axes
+    ctx.strokeStyle = axisColor;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(margin.left, plotTop3);
+    ctx.lineTo(margin.left, plotBot3);
+    ctx.lineTo(margin.left + plotW, plotBot3);
+    ctx.stroke();
+
+    ctx.fillStyle = mutedColor;
+    ctx.font = '10px system-ui';
+    ctx.fillText('|a|²', margin.left - 30, plotTop3 + 5);
+    ctx.fillText('z →', margin.left + plotW - 20, plotBot3 + 14);
+
+    // |a1|^2
+    ctx.beginPath();
+    ctx.strokeStyle = color1;
+    ctx.lineWidth = 2;
+    for (let px = 0; px <= nPts; px++) {
+      const x = margin.left + px;
+      const intensity = data[px].env1 * data[px].env1;
+      const y = plotBot3 - intensity * scale3;
+      px === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    // |a2|^2
+    ctx.beginPath();
+    ctx.strokeStyle = color2;
+    ctx.lineWidth = 2;
+    for (let px = 0; px <= nPts; px++) {
+      const x = margin.left + px;
+      const intensity = data[px].env2 * data[px].env2;
+      const y = plotBot3 - intensity * scale3;
+      px === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    // Total power (conservation check)
+    ctx.beginPath();
+    ctx.strokeStyle = mutedColor;
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    for (let px = 0; px <= nPts; px++) {
+      const x = margin.left + px;
+      const total = data[px].env1 ** 2 + data[px].env2 ** 2;
+      const y = plotBot3 - total * scale3;
+      px === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Legend
+    ctx.fillStyle = color1;
+    ctx.fillRect(margin.left + 5, plotTop3 + 6, 10, 10);
+    ctx.fillStyle = textColor;
+    ctx.font = '10px system-ui';
+    ctx.fillText('|a₁|²', margin.left + 20, plotTop3 + 15);
+
+    ctx.fillStyle = color2;
+    ctx.fillRect(margin.left + 65, plotTop3 + 6, 10, 10);
+    ctx.fillStyle = textColor;
+    ctx.fillText('|a₂|²', margin.left + 80, plotTop3 + 15);
+
+    ctx.fillStyle = mutedColor;
+    ctx.fillRect(margin.left + 125, plotTop3 + 6, 10, 10);
+    ctx.fillStyle = textColor;
+    ctx.fillText('total', margin.left + 140, plotTop3 + 15);
+
+    // Info: Omega and transfer efficiency
+    const Omega = Math.sqrt(kappa * kappa + (db / 2) * (db / 2));
+    const transferMax = Omega > 0.001 ? (kappa * kappa) / (Omega * Omega) : 0;
+    ctx.fillStyle = mutedColor;
+    ctx.font = '10px system-ui';
+    ctx.textAlign = 'right';
+    ctx.fillText(`Ω = ${Omega.toFixed(2)}   max transfer = ${(transferMax * 100).toFixed(0)}%`, margin.left + plotW, plotTop3 + 15);
+    ctx.textAlign = 'left';
+
+    time += 0.016;
+    if (isVisible) requestAnimationFrame(draw);
+  }
+
+  let isVisible = false;
+  const observer = new IntersectionObserver(([entry]) => {
+    const wasVisible = isVisible;
+    isVisible = entry.isIntersecting;
+    if (isVisible && !wasVisible) requestAnimationFrame(draw);
+  }, { threshold: 0.1 });
+  observer.observe(canvas.closest('.diagram-container')!);
+</script>

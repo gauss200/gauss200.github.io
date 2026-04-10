@@ -8,6 +8,7 @@ import QuantumMeasurement from '../../components/diagrams/QuantumMeasurement.ast
 import PeriodicCoupledModes from '../../components/diagrams/PeriodicCoupledModes.astro';
 import ContinuumDecay from '../../components/diagrams/ContinuumDecay.astro';
 import EPRExperiment from '../../components/diagrams/EPRExperiment.astro';
+import TwoModeCoupler from '../../components/diagrams/TwoModeCoupler.astro';
 ---
 <BaseLayout title="Foundations of Quantum Mechanics">
   <section class="page-header">
@@ -21,6 +22,18 @@ import EPRExperiment from '../../components/diagrams/EPRExperiment.astro';
   </section>
 
   <section class="diagram-grid">
+    <div class="diagram-intro">
+      <h2>Two Coupled Modes — Fields & Envelopes</h2>
+      <p>
+        The fundamental coupled mode system: two modes with propagation constant &beta;,
+        coupling &kappa;, and mismatch &Delta;&beta;. Set the initial amplitudes and
+        watch the carrier fields propagate while the envelopes show energy exchange.
+        With &Delta;&beta; = 0 and A₂(0) = 0, all energy transfers to mode 2 at the
+        beat length &pi;/2&kappa;.
+      </p>
+    </div>
+    <TwoModeCoupler />
+
     <div class="diagram-intro">
       <h2>Co-Propagating Coupled Modes</h2>
       <p>
