@@ -5,6 +5,7 @@ journal: "Applied Physics Letters"
 year: 1984
 doi: ""
 featured: true
+image: "/images/publications/staebler-wronski.svg"
 ---
 
 Systematic study of the kinetics of light-induced metastable defect creation in a-Si:H, establishing the stretched-exponential time dependence of the Staebler-Wronski effect.

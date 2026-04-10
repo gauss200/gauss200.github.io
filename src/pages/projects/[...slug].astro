@@ -1,0 +1,126 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getCollection, render } from 'astro:content';
+
+export async function getStaticPaths() {
+  const projects = await getCollection('projects');
+  return projects.map((project) => ({
+    params: { slug: project.id },
+    props: { project },
+  }));
+}
+
+const { project } = Astro.props;
+const { Content } = await render(project);
+const { title, status, year_start, year_end, summary, image } = project.data;
+const years = year_end ? `${year_start}–${year_end}` : `${year_start}–present`;
+---
+<BaseLayout title={title}>
+  <article class="project-page">
+    <a href="/research" class="back-link">&larr; Back to Research</a>
+
+    {image && (
+      <div class="project-page__hero">
+        <img src={image} alt={title} />
+      </div>
+    )}
+
+    <header class="project-page__header">
+      <h1>{title}</h1>
+      <div class="project-page__meta">
+        <span class="project-page__years">{years}</span>
+        <span class:list={['project-page__badge', status]}>{status}</span>
+      </div>
+      <p class="project-page__summary">{summary}</p>
+    </header>
+
+    <div class="project-page__body">
+      <Content />
+    </div>
+  </article>
+</BaseLayout>
+
+<style>
+  .project-page {
+    padding: 2rem 0;
+  }
+
+  .back-link {
+    display: inline-block;
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
+    color: var(--color-text-muted);
+  }
+
+  .back-link:hover {
+    color: var(--color-accent);
+  }
+
+  .project-page__hero {
+    width: 100%;
+    max-height: 300px;
+    overflow: hidden;
+    border-radius: var(--border-radius);
+    margin-bottom: 2rem;
+    background: var(--color-bg-secondary);
+  }
+
+  .project-page__hero img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .project-page__header {
+    margin-bottom: 2rem;
+  }
+
+  .project-page__header h1 {
+    font-size: clamp(1.5rem, 4vw, 2rem);
+    margin-bottom: 0.5rem;
+  }
+
+  .project-page__meta {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+
+  .project-page__years {
+    font-size: 0.9rem;
+    color: var(--color-text-muted);
+  }
+
+  .project-page__badge {
+    font-size: 0.75rem;
+    padding: 0.15rem 0.6rem;
+    border-radius: 12px;
+    text-transform: uppercase;
+  }
+
+  .project-page__badge.active {
+    background: var(--color-accent);
+    color: white;
+  }
+
+  .project-page__badge.completed {
+    background: var(--color-bg-secondary);
+    color: var(--color-text-muted);
+  }
+
+  .project-page__summary {
+    font-size: 1.1rem;
+    color: var(--color-text-muted);
+    line-height: 1.6;
+  }
+
+  .project-page__body {
+    font-size: 1rem;
+    line-height: 1.8;
+  }
+
+  .project-page__body :global(p) {
+    margin-bottom: 1rem;
+  }
+</style>

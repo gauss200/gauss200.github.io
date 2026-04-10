@@ -1,0 +1,108 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import CoupledWaveguides from '../components/diagrams/CoupledWaveguides.astro';
+import CounterPropagating from '../components/diagrams/CounterPropagating.astro';
+import BlochSphere from '../components/diagrams/BlochSphere.astro';
+import RabiOscillations from '../components/diagrams/RabiOscillations.astro';
+import QuantumTunneling from '../components/diagrams/QuantumTunneling.astro';
+---
+<BaseLayout title="Foundations of Quantum Mechanics">
+  <section class="page-header">
+    <h1>Foundations of Quantum Mechanics</h1>
+    <p class="page-intro">
+      Coupled mode theory (CMT) and quantum two-level systems share identical mathematical
+      structure. A forward wave coupling to a backward wave in a waveguide obeys the same
+      equations as a quantum particle tunneling through a barrier. Explore the connections
+      through these interactive visualizations.
+    </p>
+  </section>
+
+  <section class="diagram-grid">
+    <div class="diagram-intro">
+      <h2>Co-Propagating Coupled Modes</h2>
+      <p>
+        When two waveguides are brought close together, their evanescent fields overlap
+        and energy transfers periodically between them. The coupling coefficient &kappa;
+        and detuning &Delta;&beta; control the transfer efficiency and beat length.
+      </p>
+    </div>
+    <CoupledWaveguides />
+
+    <div class="diagram-intro">
+      <h2>Counter-Propagating Waves</h2>
+      <p>
+        In structures like Bragg gratings, a forward-traveling wave couples to a
+        backward-traveling wave through periodic evanescent interaction. At resonance,
+        the structure acts as a near-perfect mirror.
+      </p>
+    </div>
+    <CounterPropagating />
+
+    <div class="diagram-intro">
+      <h2>Rabi Oscillations</h2>
+      <p>
+        The occupation probability of a two-level quantum system oscillates between
+        states at the Rabi frequency &Omega; — mathematically identical to the energy
+        exchange in coupled waveguides.
+      </p>
+    </div>
+    <RabiOscillations />
+
+    <div class="diagram-intro">
+      <h2>Quantum Tunneling &harr; Evanescent Coupling</h2>
+      <p>
+        A quantum particle tunneling through a classically forbidden potential barrier
+        is the same physics as evanescent coupling bridging the gap between waveguides.
+        Both involve exponentially decaying fields in the forbidden region.
+      </p>
+    </div>
+    <QuantumTunneling />
+
+    <div class="diagram-intro">
+      <h2>Bloch Sphere</h2>
+      <p>
+        The state of any two-level system — whether a qubit, a coupled waveguide pair,
+        or a spin-½ particle — maps to a point on the Bloch sphere. Coupling rotates
+        around the x-axis; detuning rotates around z.
+      </p>
+    </div>
+    <BlochSphere />
+  </section>
+</BaseLayout>
+
+<style>
+  .page-header {
+    padding: 3rem 0 1rem;
+  }
+
+  .page-header h1 {
+    margin-bottom: 1rem;
+  }
+
+  .page-intro {
+    color: var(--color-text-muted);
+    font-size: 1.05rem;
+    line-height: 1.7;
+    max-width: 720px;
+  }
+
+  .diagram-grid {
+    padding: 1rem 0 2rem;
+  }
+
+  .diagram-intro {
+    margin-top: 3rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .diagram-intro h2 {
+    margin-bottom: 0.5rem;
+  }
+
+  .diagram-intro p {
+    color: var(--color-text-muted);
+    font-size: 0.95rem;
+    line-height: 1.6;
+    max-width: 680px;
+  }
+</style>

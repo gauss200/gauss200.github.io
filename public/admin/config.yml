@@ -20,6 +20,7 @@ collections:
       - { label: DOI, name: doi, widget: string, required: false }
       - { label: Abstract, name: abstract, widget: text, required: false }
       - { label: Featured, name: featured, widget: boolean, default: false }
+      - { label: Image, name: image, widget: image, required: false }
       - { label: Body, name: body, widget: markdown }
 
   - name: patents
@@ -48,6 +49,7 @@ collections:
       - { label: End Year, name: year_end, widget: number, value_type: int, required: false }
       - { label: Summary, name: summary, widget: text }
       - { label: Display Order, name: order, widget: number, value_type: int, default: 0 }
+      - { label: Image, name: image, widget: image, required: false }
       - { label: Body, name: body, widget: markdown }
 
   - name: hobbies

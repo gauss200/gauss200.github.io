@@ -4,6 +4,7 @@ import ThemeToggle from './ThemeToggle.astro';
 const links = [
   { href: '/', label: 'Home' },
   { href: '/research', label: 'Research' },
+  { href: '/quantum-foundations', label: 'Quantum' },
   { href: '/publications', label: 'Publications' },
   { href: '/hobbies', label: 'Hobbies' },
   { href: '/contact', label: 'Contact' },
@@ -78,7 +79,6 @@ const currentPath = Astro.url.pathname;
     color: var(--color-nav-text);
     opacity: 0.8;
     font-size: 0.9rem;
-    transition: opacity var(--transition-speed);
   }
 
   .nav__link:hover, .nav__link.active {

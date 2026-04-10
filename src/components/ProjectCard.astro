@@ -5,28 +5,71 @@ interface Props {
   year_start: number;
   year_end?: number;
   summary: string;
+  image?: string;
+  slug: string;
 }
 
-const { title, status, year_start, year_end, summary } = Astro.props;
+const { title, status, year_start, year_end, summary, image, slug } = Astro.props;
 const years = year_end ? `${year_start}–${year_end}` : `${year_start}–present`;
 ---
-<article class="card project-card">
-  <div class="project-card__header">
-    <h3>{title}</h3>
-    <span class="project-card__years">{years}</span>
-    <span class:list={['project-card__badge', status]}>{status}</span>
-  </div>
-  <p class="project-card__summary">{summary}</p>
-  <div class="project-card__body"><slot /></div>
-</article>
+<a href={`/projects/${slug}`} class="project-card__link">
+  <article class="card project-card">
+    {image && (
+      <div class="project-card__image">
+        <img src={image} alt={title} loading="lazy" />
+      </div>
+    )}
+    <div class="project-card__content">
+      <div class="project-card__header">
+        <h3>{title}</h3>
+        <span class="project-card__years">{years}</span>
+        <span class:list={['project-card__badge', status]}>{status}</span>
+      </div>
+      <p class="project-card__summary">{summary}</p>
+    </div>
+  </article>
+</a>
 
 <style>
-  .project-card { margin-bottom: 1.5rem; }
+  .project-card__link {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+    margin-bottom: 1.5rem;
+  }
+  .project-card__link:hover .project-card {
+    box-shadow: 0 4px 16px var(--color-card-shadow);
+    border-color: var(--color-accent);
+  }
+  .project-card {
+    display: flex;
+    gap: 1.25rem;
+    transition: box-shadow 0.2s, border-color 0.2s;
+    border: 1px solid transparent;
+  }
+  .project-card__image {
+    flex-shrink: 0;
+    width: 180px;
+    height: 120px;
+    overflow: hidden;
+    border-radius: var(--border-radius);
+    background: var(--color-bg-secondary);
+  }
+  .project-card__image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .project-card__content { flex: 1; min-width: 0; }
   .project-card__header { display: flex; align-items: baseline; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 0.5rem; }
   .project-card__years { font-size: 0.85rem; color: var(--color-text-muted); }
   .project-card__badge { font-size: 0.75rem; padding: 0.1rem 0.5rem; border-radius: 12px; text-transform: uppercase; }
   .project-card__badge.active { background: var(--color-accent); color: white; }
   .project-card__badge.completed { background: var(--color-bg-secondary); color: var(--color-text-muted); }
   .project-card__summary { color: var(--color-text-muted); font-size: 0.95rem; }
-  .project-card__body { margin-top: 0.75rem; font-size: 0.9rem; }
+
+  @media (max-width: 580px) {
+    .project-card { flex-direction: column; }
+    .project-card__image { width: 100%; height: 160px; }
+  }
 </style>

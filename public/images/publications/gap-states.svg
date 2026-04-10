@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 200" fill="none">
+  <rect width="400" height="200" fill="#f8f8f8"/>
+  <!-- Band diagram -->
+  <rect x="40" y="20" width="320" height="45" fill="#457b9d" opacity="0.15"/>
+  <text x="170" y="48" font-family="system-ui" font-size="11" fill="#457b9d">Conduction Band</text>
+  <rect x="40" y="135" width="320" height="45" fill="#457b9d" opacity="0.15"/>
+  <text x="180" y="163" font-family="system-ui" font-size="11" fill="#457b9d">Valence Band</text>
+  <!-- Gap states -->
+  <line x1="120" y1="85" x2="200" y2="85" stroke="#e63946" stroke-width="2"/>
+  <line x1="220" y1="100" x2="300" y2="100" stroke="#e63946" stroke-width="2"/>
+  <line x1="150" y1="115" x2="250" y2="115" stroke="#e63946" stroke-width="2" stroke-dasharray="4,3"/>
+  <text x="310" y="88" font-family="system-ui" font-size="9" fill="#e63946">Gap states</text>
+  <!-- Arrow showing PDS measurement -->
+  <line x1="80" y1="155" x2="80" y2="90" stroke="#2a9d8f" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="55" y="185" font-family="system-ui" font-size="9" fill="#2a9d8f">PDS probe</text>
+  <defs><marker id="arr" markerWidth="6" markerHeight="4" refX="6" refY="2" orient="auto"><path d="M0,0 L6,2 L0,4" fill="#2a9d8f"/></marker></defs>
+</svg>

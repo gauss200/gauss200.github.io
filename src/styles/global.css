@@ -12,8 +12,6 @@ body {
   background-color: var(--color-bg);
   color: var(--color-text);
   line-height: 1.6;
-  transition: background-color var(--transition-speed),
-              color var(--transition-speed);
 }
 
 h1, h2, h3, h4 {
@@ -41,8 +39,6 @@ a:hover {
   border-radius: var(--border-radius);
   padding: 1.5rem;
   box-shadow: 0 2px 8px var(--color-card-shadow);
-  transition: background-color var(--transition-speed),
-              box-shadow var(--transition-speed);
 }
 
 /* Responsive diagram containers */

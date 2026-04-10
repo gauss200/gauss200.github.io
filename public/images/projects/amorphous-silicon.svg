@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240" fill="none">
+  <rect width="400" height="240" fill="#f5f5f5"/>
+  <!-- Amorphous network -->
+  <circle cx="120" cy="80" r="8" fill="#457b9d" opacity="0.6"/>
+  <circle cx="160" cy="65" r="8" fill="#457b9d" opacity="0.6"/>
+  <circle cx="200" cy="85" r="8" fill="#457b9d" opacity="0.6"/>
+  <circle cx="140" cy="110" r="8" fill="#457b9d" opacity="0.6"/>
+  <circle cx="180" cy="105" r="8" fill="#457b9d" opacity="0.6"/>
+  <circle cx="220" cy="115" r="8" fill="#457b9d" opacity="0.6"/>
+  <circle cx="260" cy="75" r="8" fill="#457b9d" opacity="0.6"/>
+  <circle cx="240" cy="95" r="8" fill="#457b9d" opacity="0.6"/>
+  <circle cx="280" cy="105" r="8" fill="#457b9d" opacity="0.6"/>
+  <!-- Bonds -->
+  <line x1="120" y1="80" x2="160" y2="65" stroke="#457b9d" stroke-width="1.5" opacity="0.4"/>
+  <line x1="160" y1="65" x2="200" y2="85" stroke="#457b9d" stroke-width="1.5" opacity="0.4"/>
+  <line x1="120" y1="80" x2="140" y2="110" stroke="#457b9d" stroke-width="1.5" opacity="0.4"/>
+  <line x1="140" y1="110" x2="180" y2="105" stroke="#457b9d" stroke-width="1.5" opacity="0.4"/>
+  <line x1="180" y1="105" x2="200" y2="85" stroke="#457b9d" stroke-width="1.5" opacity="0.4"/>
+  <line x1="200" y1="85" x2="240" y2="95" stroke="#457b9d" stroke-width="1.5" opacity="0.4"/>
+  <line x1="220" y1="115" x2="240" y2="95" stroke="#457b9d" stroke-width="1.5" opacity="0.4"/>
+  <line x1="260" y1="75" x2="240" y2="95" stroke="#457b9d" stroke-width="1.5" opacity="0.4"/>
+  <line x1="260" y1="75" x2="280" y2="105" stroke="#457b9d" stroke-width="1.5" opacity="0.4"/>
+  <line x1="220" y1="115" x2="280" y2="105" stroke="#457b9d" stroke-width="1.5" opacity="0.4"/>
+  <!-- Dangling bond (defect) -->
+  <circle cx="180" cy="105" r="4" fill="#e63946"/>
+  <line x1="180" y1="105" x2="180" y2="135" stroke="#e63946" stroke-width="1.5" stroke-dasharray="3,2"/>
+  <text x="185" y="140" font-family="system-ui" font-size="9" fill="#e63946">dangling bond</text>
+  <!-- Hydrogen -->
+  <circle cx="140" cy="110" r="3" fill="#2a9d8f"/>
+  <text x="108" y="132" font-family="system-ui" font-size="9" fill="#2a9d8f">H</text>
+  <text x="120" y="185" font-family="system-ui" font-size="12" fill="#333" font-weight="600">Amorphous Silicon (a-Si:H)</text>
+  <text x="115" y="205" font-family="system-ui" font-size="10" fill="#888">Disordered network with hydrogen passivation</text>
+</svg>

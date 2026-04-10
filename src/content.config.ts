@@ -11,6 +11,7 @@ const publications = defineCollection({
     doi: z.string().optional(),
     abstract: z.string().optional(),
     featured: z.boolean().default(false),
+    image: z.string().optional(),
   }),
 });
 
@@ -35,6 +36,7 @@ const projects = defineCollection({
     year_end: z.number().optional(),
     summary: z.string(),
     order: z.number().default(0),
+    image: z.string().optional(),
   }),
 });
 
