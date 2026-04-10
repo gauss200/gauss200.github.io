@@ -6,6 +6,7 @@ import CounterPropagating from '../../components/diagrams/CounterPropagating.ast
 import BlochSphere from '../../components/diagrams/BlochSphere.astro';
 import RabiOscillations from '../../components/diagrams/RabiOscillations.astro';
 import QuantumTunneling from '../../components/diagrams/QuantumTunneling.astro';
+import QuantumMeasurement from '../../components/diagrams/QuantumMeasurement.astro';
 ---
 <BaseLayout title="Foundations of Quantum Mechanics">
   <section class="page-header">
@@ -69,6 +70,19 @@ import QuantumTunneling from '../../components/diagrams/QuantumTunneling.astro';
       </p>
     </div>
     <BlochSphere />
+
+    <div class="diagram-intro">
+      <h2>Quantum Measurement as Coupled Modes</h2>
+      <p>
+        In the coupled mode theory of measurement, a system waveguide carrying |&psi;⟩
+        is coupled to an initially empty measurement waveguide through an interaction
+        operator A. As the modes co-propagate through the interaction region, amplitude
+        builds up in the measurement channel. The coupling strength &kappa; and interaction
+        length L determine whether this is a weak measurement (minimal back-action) or
+        a strong projective measurement (significant state transfer).
+      </p>
+    </div>
+    <QuantumMeasurement />
   </section>
 </BaseLayout>
 

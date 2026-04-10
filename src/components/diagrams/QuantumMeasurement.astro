@@ -1,0 +1,359 @@
+---
+// Coupled Mode Theory of Quantum Measurement
+// A system waveguide couples to a measurement waveguide via operator A.
+// The measurement waveguide starts at zero amplitude and builds up
+// as the interaction length increases.
+---
+<div class="diagram-container">
+  <h3>CMT of Quantum Measurement</h3>
+  <p class="diagram-desc">
+    A system waveguide carrying state |&psi;⟩ is coupled to a measurement waveguide
+    (initially empty) through an interaction operator A over a finite interaction length L.
+    The measurement waveguide accumulates amplitude proportional to A|&psi;⟩ as the
+    modes co-propagate through the coupling region.
+  </p>
+  <div class="diagram-controls">
+    <label>
+      Coupling (&kappa;):
+      <input type="range" id="qm-kappa" min="0.1" max="3" step="0.05" value="1.0" />
+      <span id="qm-kappa-val">1.0</span>
+    </label>
+    <label>
+      Interaction length (L):
+      <input type="range" id="qm-length" min="0.5" max="8" step="0.25" value="3.0" />
+      <span id="qm-length-val">3.0</span>
+    </label>
+  </div>
+  <canvas id="quantum-measurement" width="800" height="480"></canvas>
+</div>
+
+<style>
+  .diagram-container {
+    margin: 2rem 0;
+    padding: 1.5rem;
+    background: var(--color-card-bg);
+    border-radius: var(--border-radius);
+    box-shadow: 0 2px 8px var(--color-card-shadow);
+  }
+
+  .diagram-desc {
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+  }
+
+  .diagram-controls {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .diagram-controls label {
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  canvas {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: var(--border-radius);
+  }
+</style>
+
+<script>
+  const canvas = document.getElementById('quantum-measurement') as HTMLCanvasElement;
+  const ctx = canvas.getContext('2d')!;
+  const kappaSlider = document.getElementById('qm-kappa') as HTMLInputElement;
+  const kappaValEl = document.getElementById('qm-kappa-val')!;
+  const lengthSlider = document.getElementById('qm-length') as HTMLInputElement;
+  const lengthValEl = document.getElementById('qm-length-val')!;
+
+  let time = 0;
+
+  kappaSlider.addEventListener('input', () => { kappaValEl.textContent = parseFloat(kappaSlider.value).toFixed(2); });
+  lengthSlider.addEventListener('input', () => { lengthValEl.textContent = parseFloat(lengthSlider.value).toFixed(2); });
+
+  // CMT measurement model:
+  //   System:      dA_s/dz = -i*kappa*A_m    (system loses amplitude to measurement)
+  //   Measurement: dA_m/dz = -i*kappa*A_s    (measurement gains from system)
+  //
+  // Boundary: A_s(0) = 1, A_m(0) = 0
+  // Solution: A_s(z) = cos(kappa*z), A_m(z) = -i*sin(kappa*z)
+  // |A_s(z)|^2 = cos^2(kappa*z), |A_m(z)|^2 = sin^2(kappa*z)
+  //
+  // Outside interaction region (z > L): amplitudes freeze at their z=L values.
+
+  function draw() {
+    const W = canvas.width;
+    const H = canvas.height;
+    const kappa = parseFloat(kappaSlider.value);
+    const L = parseFloat(lengthSlider.value);
+
+    const isDark = document.documentElement.getAttribute('data-theme') === 'ds9';
+
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = isDark ? '#05050f' : '#fafafa';
+    ctx.fillRect(0, 0, W, H);
+
+    const colorSys = isDark ? '#e8a640' : '#e63946';
+    const colorMeas = isDark ? '#64b5f6' : '#457b9d';
+    const colorCoupling = isDark ? '#33cccc' : '#2a9d8f';
+    const textColor = isDark ? '#c8cad8' : '#1a1a1a';
+    const mutedColor = isDark ? '#7a7e9a' : '#888';
+    const axisColor = isDark ? '#1a1a4a' : '#e0e0e0';
+    const regionColor = isDark ? 'rgba(51, 204, 204, 0.06)' : 'rgba(42, 157, 143, 0.05)';
+
+    const margin = { left: 50, right: 30, top: 15, bottom: 45 };
+    const plotW = W - margin.left - margin.right;
+    const totalZ = 10; // total z range
+
+    // Interaction region in pixel space
+    const zStart = 1; // interaction starts at z=1
+    const pxStart = margin.left + (zStart / totalZ) * plotW;
+    const pxEnd = margin.left + ((zStart + L) / totalZ) * plotW;
+    const pxEndClamped = Math.min(pxEnd, margin.left + plotW);
+
+    // --- Top half: waveguide diagram ---
+    const wgTop = margin.top;
+    const wgH = H * 0.45;
+    const sysY = wgTop + wgH * 0.3;
+    const measY = wgTop + wgH * 0.7;
+    const guideH = 24;
+    const waveAmp = guideH * 0.35;
+    const k0 = 18; // carrier frequency
+
+    // Interaction region background
+    ctx.fillStyle = regionColor;
+    ctx.fillRect(pxStart, wgTop, pxEndClamped - pxStart, wgH);
+
+    // Interaction region borders
+    ctx.strokeStyle = colorCoupling;
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(pxStart, wgTop);
+    ctx.lineTo(pxStart, wgTop + wgH);
+    ctx.stroke();
+    if (pxEnd <= margin.left + plotW) {
+      ctx.beginPath();
+      ctx.moveTo(pxEnd, wgTop);
+      ctx.lineTo(pxEnd, wgTop + wgH);
+      ctx.stroke();
+    }
+    ctx.setLineDash([]);
+
+    // Interaction region label
+    ctx.fillStyle = colorCoupling;
+    ctx.font = '11px system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText('Interaction region (operator A)', (pxStart + pxEndClamped) / 2, wgTop + 12);
+    ctx.fillText(`L = ${L.toFixed(1)}`, (pxStart + pxEndClamped) / 2, wgTop + 25);
+    ctx.textAlign = 'left';
+
+    // Waveguide boundaries
+    ctx.strokeStyle = isDark ? '#2a2d4a' : '#d0d0d0';
+    ctx.lineWidth = 1;
+    for (const wy of [sysY, measY]) {
+      ctx.beginPath();
+      ctx.moveTo(margin.left, wy - guideH / 2);
+      ctx.lineTo(margin.left + plotW, wy - guideH / 2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(margin.left, wy + guideH / 2);
+      ctx.lineTo(margin.left + plotW, wy + guideH / 2);
+      ctx.stroke();
+    }
+
+    // Labels
+    ctx.fillStyle = colorSys;
+    ctx.font = '11px system-ui';
+    ctx.fillText('System |ψ⟩', margin.left - 2, sysY - guideH / 2 - 4);
+    ctx.fillStyle = colorMeas;
+    ctx.fillText('Measurement', margin.left - 2, measY - guideH / 2 - 4);
+
+    // Coupling arrows between waveguides in interaction region
+    ctx.strokeStyle = colorCoupling;
+    ctx.lineWidth = 1;
+    ctx.globalAlpha = 0.4;
+    const arrowSpacing = 30;
+    for (let ax = pxStart + 15; ax < pxEndClamped - 10; ax += arrowSpacing) {
+      const zLocal = ((ax - pxStart) / (pxEndClamped - pxStart)) * L;
+      const strength = Math.min(1, kappa * 0.5);
+      ctx.globalAlpha = 0.15 + strength * 0.3;
+
+      // Down arrow (system → measurement)
+      ctx.beginPath();
+      ctx.moveTo(ax, sysY + guideH / 2 + 2);
+      ctx.lineTo(ax, measY - guideH / 2 - 2);
+      ctx.stroke();
+      // Arrowhead
+      ctx.beginPath();
+      ctx.moveTo(ax - 3, measY - guideH / 2 - 6);
+      ctx.lineTo(ax, measY - guideH / 2 - 2);
+      ctx.lineTo(ax + 3, measY - guideH / 2 - 6);
+      ctx.stroke();
+
+      // κ label on first arrow
+      if (ax < pxStart + 20) {
+        ctx.globalAlpha = 0.7;
+        ctx.fillStyle = colorCoupling;
+        ctx.font = '10px system-ui';
+        ctx.fillText('κ·A', ax + 6, (sysY + measY) / 2 + 3);
+      }
+    }
+    ctx.globalAlpha = 1;
+
+    // Draw waves in system waveguide
+    ctx.beginPath();
+    ctx.strokeStyle = colorSys;
+    ctx.lineWidth = 2;
+    for (let px = 0; px <= plotW; px++) {
+      const x = margin.left + px;
+      const z = (px / plotW) * totalZ;
+
+      let amp: number;
+      if (z < zStart) {
+        amp = 1; // full amplitude before interaction
+      } else if (z < zStart + L) {
+        const zLocal = z - zStart;
+        amp = Math.cos(kappa * zLocal);
+      } else {
+        amp = Math.cos(kappa * L); // frozen after interaction
+      }
+
+      const wave = amp * Math.sin(k0 * z - time * 3) * waveAmp;
+      const y = sysY + wave;
+      px === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    // Draw waves in measurement waveguide
+    ctx.beginPath();
+    ctx.strokeStyle = colorMeas;
+    ctx.lineWidth = 2;
+    for (let px = 0; px <= plotW; px++) {
+      const x = margin.left + px;
+      const z = (px / plotW) * totalZ;
+
+      let amp: number;
+      if (z < zStart) {
+        amp = 0; // empty before interaction
+      } else if (z < zStart + L) {
+        const zLocal = z - zStart;
+        amp = Math.sin(kappa * zLocal);
+      } else {
+        amp = Math.sin(kappa * L); // frozen after interaction
+      }
+
+      const wave = amp * Math.sin(k0 * z - time * 3) * waveAmp;
+      const y = measY + wave;
+      px === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    // --- Bottom half: amplitude plot ---
+    const plotTop = H * 0.55;
+    const plotBottom = H - margin.bottom;
+    const plotH = plotBottom - plotTop;
+
+    // Axes
+    ctx.strokeStyle = axisColor;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(margin.left, plotTop);
+    ctx.lineTo(margin.left, plotBottom);
+    ctx.lineTo(margin.left + plotW, plotBottom);
+    ctx.stroke();
+
+    // Y-axis labels
+    ctx.fillStyle = textColor;
+    ctx.font = '11px system-ui';
+    ctx.fillText('|A|²', margin.left - 30, plotTop + 5);
+    ctx.fillText('1.0', margin.left - 30, plotTop + 15);
+    ctx.fillText('0', margin.left - 12, plotBottom + 4);
+    ctx.fillText('z →', margin.left + plotW - 20, plotBottom + 15);
+
+    // Interaction region on plot
+    const plotPxStart = margin.left + (zStart / totalZ) * plotW;
+    const plotPxEnd = margin.left + ((zStart + L) / totalZ) * plotW;
+    const plotPxEndClamped = Math.min(plotPxEnd, margin.left + plotW);
+    ctx.fillStyle = regionColor;
+    ctx.fillRect(plotPxStart, plotTop, plotPxEndClamped - plotPxStart, plotH);
+
+    // |A_s(z)|^2 curve
+    ctx.beginPath();
+    ctx.strokeStyle = colorSys;
+    ctx.lineWidth = 2;
+    for (let px = 0; px <= plotW; px++) {
+      const z = (px / plotW) * totalZ;
+      let intensity: number;
+      if (z < zStart) {
+        intensity = 1;
+      } else if (z < zStart + L) {
+        intensity = Math.cos(kappa * (z - zStart)) ** 2;
+      } else {
+        intensity = Math.cos(kappa * L) ** 2;
+      }
+      const x = margin.left + px;
+      const y = plotBottom - intensity * plotH;
+      px === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    // |A_m(z)|^2 curve
+    ctx.beginPath();
+    ctx.strokeStyle = colorMeas;
+    ctx.lineWidth = 2;
+    for (let px = 0; px <= plotW; px++) {
+      const z = (px / plotW) * totalZ;
+      let intensity: number;
+      if (z < zStart) {
+        intensity = 0;
+      } else if (z < zStart + L) {
+        intensity = Math.sin(kappa * (z - zStart)) ** 2;
+      } else {
+        intensity = Math.sin(kappa * L) ** 2;
+      }
+      const x = margin.left + px;
+      const y = plotBottom - intensity * plotH;
+      px === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    // Readout: final measurement amplitude
+    const measFinal = Math.sin(kappa * L) ** 2;
+    const sysFinal = Math.cos(kappa * L) ** 2;
+    ctx.fillStyle = mutedColor;
+    ctx.font = '11px system-ui';
+    ctx.textAlign = 'right';
+    ctx.fillText(`|A_sys|² = ${sysFinal.toFixed(2)}`, margin.left + plotW, plotTop + 14);
+    ctx.fillStyle = colorSys;
+    ctx.fillRect(margin.left + plotW - 115, plotTop + 5, 8, 8);
+    ctx.fillStyle = mutedColor;
+    ctx.fillText(`|A_meas|² = ${measFinal.toFixed(2)}`, margin.left + plotW, plotTop + 30);
+    ctx.fillStyle = colorMeas;
+    ctx.fillRect(margin.left + plotW - 125, plotTop + 21, 8, 8);
+    ctx.textAlign = 'left';
+
+    // Note about weak vs strong measurement
+    if (kappa * L < 0.5) {
+      ctx.fillStyle = colorCoupling;
+      ctx.font = 'italic 10px system-ui';
+      ctx.fillText('Weak measurement regime — minimal back-action on system', margin.left + 5, plotBottom + 15);
+    } else if (kappa * L > 1.4) {
+      ctx.fillStyle = colorCoupling;
+      ctx.font = 'italic 10px system-ui';
+      ctx.fillText('Strong measurement — significant state transfer to measurement channel', margin.left + 5, plotBottom + 15);
+    }
+
+    time += 0.016;
+    requestAnimationFrame(draw);
+  }
+
+  draw();
+</script>
