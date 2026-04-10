@@ -1,33 +1,46 @@
+/* Deep Space Nine spaceship mode — colorful, fun, 90s sci-fi */
+
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600;700&family=VT323&display=swap');
+
 [data-theme="ds9"] {
-  --color-bg: #0a0a12;
-  --color-bg-secondary: #12132a;
-  --color-text: #c8cad8;
-  --color-text-muted: #7a7e9a;
-  --color-heading: #e8a640;
-  --color-accent: #e8a640;
-  --color-accent-hover: #f0c060;
-  --color-border: #2a2d4a;
-  --color-card-bg: #16182e;
-  --color-card-shadow: rgba(232, 166, 64, 0.08);
-  --color-nav-bg: #0e1028;
-  --color-nav-text: #e8a640;
-  --font-heading: 'Segoe UI', system-ui, sans-serif;
-  --font-body: 'Segoe UI', system-ui, sans-serif;
-  --font-mono: 'Fira Code', 'Consolas', monospace;
+  --color-bg: #05050f;
+  --color-bg-secondary: #0c0c24;
+  --color-text: #d0d8f0;
+  --color-text-muted: #8890b0;
+  --color-heading: #ff9f1c;
+  --color-accent: #ff9f1c;
+  --color-accent-hover: #ffbf69;
+  --color-border: #1a1a4a;
+  --color-card-bg: rgba(12, 12, 40, 0.85);
+  --color-card-shadow: rgba(255, 159, 28, 0.1);
+  --color-nav-bg: rgba(8, 8, 28, 0.95);
+  --color-nav-text: #ff9f1c;
+  --font-heading: 'Orbitron', 'Exo 2', system-ui, sans-serif;
+  --font-body: 'Exo 2', system-ui, sans-serif;
+  --font-mono: 'VT323', 'Courier New', monospace;
   --border-radius: 8px;
   --transition-speed: 0.3s;
 
-  /* DS9-specific decorative vars */
-  --ds9-glow: 0 0 20px rgba(232, 166, 64, 0.15);
+  /* LCARS colors from the show */
+  --lcars-orange: #ff9f1c;
+  --lcars-peach: #ffbf69;
+  --lcars-lavender: #cc99ff;
+  --lcars-blue: #6699ff;
+  --lcars-teal: #33cccc;
+  --lcars-pink: #ff6699;
+  --lcars-red: #ff4444;
+
+  --ds9-glow: 0 0 20px rgba(255, 159, 28, 0.2), 0 0 60px rgba(255, 159, 28, 0.05);
   --ds9-scanline: repeating-linear-gradient(
     0deg,
     transparent,
-    transparent 2px,
-    rgba(232, 166, 64, 0.03) 2px,
-    rgba(232, 166, 64, 0.03) 4px
+    transparent 3px,
+    rgba(255, 159, 28, 0.015) 3px,
+    rgba(255, 159, 28, 0.015) 6px
   );
 }
 
+/* Scanline overlay */
 [data-theme="ds9"] body::before {
   content: '';
   position: fixed;
@@ -37,52 +50,197 @@
   z-index: 9999;
 }
 
+/* Animated starfield background */
+[data-theme="ds9"] body {
+  background-color: var(--color-bg);
+  background-image:
+    /* Bright stars */
+    radial-gradient(2px 2px at 3% 15%, #ffffff, transparent),
+    radial-gradient(2px 2px at 8% 67%, #ffffff, transparent),
+    radial-gradient(1.5px 1.5px at 12% 42%, #ffffcc, transparent),
+    radial-gradient(2px 2px at 18% 88%, #ffffff, transparent),
+    radial-gradient(1px 1px at 22% 8%, #ccccff, transparent),
+    radial-gradient(2.5px 2.5px at 27% 55%, #ffffff, transparent),
+    radial-gradient(1.5px 1.5px at 33% 23%, #ffcccc, transparent),
+    radial-gradient(2px 2px at 38% 78%, #ffffff, transparent),
+    radial-gradient(1px 1px at 42% 35%, #ccffcc, transparent),
+    radial-gradient(2px 2px at 48% 92%, #ffffff, transparent),
+    radial-gradient(1.5px 1.5px at 52% 12%, #ffffff, transparent),
+    radial-gradient(2px 2px at 57% 48%, #ffffcc, transparent),
+    radial-gradient(1px 1px at 62% 72%, #ccccff, transparent),
+    radial-gradient(2.5px 2.5px at 67% 5%, #ffffff, transparent),
+    radial-gradient(1.5px 1.5px at 72% 60%, #ffffff, transparent),
+    radial-gradient(2px 2px at 78% 33%, #ffcccc, transparent),
+    radial-gradient(1px 1px at 82% 85%, #ffffff, transparent),
+    radial-gradient(2px 2px at 87% 18%, #ccffcc, transparent),
+    radial-gradient(1.5px 1.5px at 92% 52%, #ffffff, transparent),
+    radial-gradient(2px 2px at 97% 75%, #ffffff, transparent),
+    /* Dim background stars */
+    radial-gradient(1px 1px at 5% 30%, rgba(255,255,255,0.4), transparent),
+    radial-gradient(1px 1px at 15% 55%, rgba(255,255,255,0.3), transparent),
+    radial-gradient(1px 1px at 25% 10%, rgba(255,255,255,0.5), transparent),
+    radial-gradient(1px 1px at 35% 80%, rgba(255,255,255,0.3), transparent),
+    radial-gradient(1px 1px at 45% 20%, rgba(255,255,255,0.4), transparent),
+    radial-gradient(1px 1px at 55% 65%, rgba(255,255,255,0.3), transparent),
+    radial-gradient(1px 1px at 65% 40%, rgba(255,255,255,0.5), transparent),
+    radial-gradient(1px 1px at 75% 90%, rgba(255,255,255,0.3), transparent),
+    radial-gradient(1px 1px at 85% 50%, rgba(255,255,255,0.4), transparent),
+    radial-gradient(1px 1px at 95% 25%, rgba(255,255,255,0.3), transparent),
+    /* Subtle nebula */
+    radial-gradient(200px 200px at 20% 80%, rgba(102, 51, 153, 0.08), transparent),
+    radial-gradient(300px 200px at 75% 20%, rgba(0, 80, 160, 0.06), transparent),
+    radial-gradient(250px 250px at 50% 50%, rgba(153, 51, 102, 0.04), transparent);
+}
+
+/* Twinkling star animation */
+[data-theme="ds9"] body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    radial-gradient(2px 2px at 10% 45%, #ffffff, transparent),
+    radial-gradient(2px 2px at 40% 15%, #ffffff, transparent),
+    radial-gradient(1.5px 1.5px at 60% 70%, #ffffff, transparent),
+    radial-gradient(2px 2px at 85% 40%, #ffffff, transparent),
+    radial-gradient(1.5px 1.5px at 30% 90%, #ffffff, transparent);
+  pointer-events: none;
+  z-index: 9998;
+  animation: twinkle 4s ease-in-out infinite alternate;
+}
+
+@keyframes twinkle {
+  0% { opacity: 0.3; }
+  50% { opacity: 0.8; }
+  100% { opacity: 0.2; }
+}
+
+/* Cards — LCARS style with colorful left borders */
 [data-theme="ds9"] .card {
   box-shadow: var(--ds9-glow);
   border: 1px solid var(--color-border);
+  border-left: 5px solid var(--lcars-orange);
+  border-radius: 0 var(--border-radius) var(--border-radius) 0;
+  backdrop-filter: blur(8px);
 }
 
-/* Starfield background */
-[data-theme="ds9"] body {
-  background-image:
-    radial-gradient(1px 1px at 10% 20%, rgba(255,255,255,0.4), transparent),
-    radial-gradient(1px 1px at 30% 60%, rgba(255,255,255,0.3), transparent),
-    radial-gradient(1px 1px at 50% 10%, rgba(255,255,255,0.5), transparent),
-    radial-gradient(1px 1px at 70% 80%, rgba(255,255,255,0.3), transparent),
-    radial-gradient(1px 1px at 90% 40%, rgba(255,255,255,0.4), transparent),
-    radial-gradient(1.5px 1.5px at 15% 75%, rgba(255,255,255,0.6), transparent),
-    radial-gradient(1.5px 1.5px at 85% 15%, rgba(255,255,255,0.5), transparent),
-    radial-gradient(1px 1px at 45% 45%, rgba(255,255,255,0.3), transparent),
-    radial-gradient(1px 1px at 65% 25%, rgba(255,255,255,0.4), transparent),
-    radial-gradient(1.5px 1.5px at 25% 90%, rgba(255,255,255,0.3), transparent);
-  background-color: var(--color-bg);
+[data-theme="ds9"] .card:nth-child(3n+2) {
+  border-left-color: var(--lcars-lavender);
 }
 
-/* LCARS-style nav accents */
+[data-theme="ds9"] .card:nth-child(3n+3) {
+  border-left-color: var(--lcars-teal);
+}
+
+[data-theme="ds9"] .card:nth-child(5n+4) {
+  border-left-color: var(--lcars-blue);
+}
+
+[data-theme="ds9"] .card:nth-child(5n+5) {
+  border-left-color: var(--lcars-pink);
+}
+
+/* LCARS-style nav */
 [data-theme="ds9"] .nav {
-  border-bottom: 3px solid var(--color-accent);
-  box-shadow: 0 2px 20px rgba(232, 166, 64, 0.1);
+  border-bottom: 3px solid var(--lcars-orange);
+  box-shadow: 0 2px 30px rgba(255, 159, 28, 0.15);
+  backdrop-filter: blur(12px);
 }
 
 [data-theme="ds9"] .nav__logo {
-  letter-spacing: 0.15em;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
-  font-size: 1rem;
+  font-family: 'Orbitron', system-ui, sans-serif;
+  font-weight: 900;
+  font-size: 0.95rem;
 }
 
-/* LCARS rounded corner accent on cards */
-[data-theme="ds9"] .card {
-  border-left: 4px solid var(--color-accent);
-  border-radius: 0 var(--border-radius) var(--border-radius) 0;
+[data-theme="ds9"] .nav__link {
+  font-family: 'Exo 2', system-ui, sans-serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.8rem;
 }
 
-/* Footer glow */
+/* Colorful heading accents */
+[data-theme="ds9"] h1 {
+  text-shadow: 0 0 40px rgba(255, 159, 28, 0.3), 0 0 80px rgba(255, 159, 28, 0.1);
+}
+
+[data-theme="ds9"] h2 {
+  text-shadow: 0 0 30px rgba(255, 159, 28, 0.2);
+  border-bottom: 2px solid var(--lcars-orange);
+  padding-bottom: 0.3rem;
+  display: inline-block;
+}
+
+[data-theme="ds9"] h3 {
+  color: var(--lcars-peach);
+}
+
+/* Footer — LCARS bar */
 [data-theme="ds9"] .footer {
-  border-top-color: var(--color-accent);
-  box-shadow: 0 -2px 15px rgba(232, 166, 64, 0.05);
+  border-top: 3px solid var(--lcars-orange);
+  box-shadow: 0 -2px 20px rgba(255, 159, 28, 0.08);
+  font-family: 'VT323', monospace;
+  font-size: 1rem;
+  letter-spacing: 0.05em;
 }
 
-/* Headings glow */
-[data-theme="ds9"] h1, [data-theme="ds9"] h2 {
-  text-shadow: 0 0 30px rgba(232, 166, 64, 0.15);
+/* Links get LCARS blue */
+[data-theme="ds9"] a:not(.nav__link):not(.nav__logo) {
+  color: var(--lcars-blue);
+}
+
+[data-theme="ds9"] a:not(.nav__link):not(.nav__logo):hover {
+  color: var(--lcars-lavender);
+  text-shadow: 0 0 10px rgba(102, 153, 255, 0.3);
+}
+
+/* Hero subtitle gets teal */
+[data-theme="ds9"] .hero__subtitle {
+  color: var(--lcars-teal) !important;
+  font-family: 'VT323', monospace;
+  font-size: 1.4rem !important;
+  letter-spacing: 0.15em;
+}
+
+/* Project badges get fun colors */
+[data-theme="ds9"] .project-card__badge.active {
+  background: var(--lcars-teal);
+  color: #05050f;
+  font-family: 'VT323', monospace;
+  font-size: 0.9rem;
+}
+
+[data-theme="ds9"] .project-card__badge.completed {
+  background: var(--lcars-lavender);
+  color: #05050f;
+  font-family: 'VT323', monospace;
+  font-size: 0.9rem;
+}
+
+/* Patent numbers in pink */
+[data-theme="ds9"] .patent-card__number {
+  color: var(--lcars-pink) !important;
+  font-family: 'VT323', monospace;
+  font-size: 1.1rem;
+}
+
+/* Publication DOI links in teal */
+[data-theme="ds9"] .pub-card__meta a {
+  color: var(--lcars-teal);
+}
+
+/* Diagram containers get extra glow */
+[data-theme="ds9"] .diagram-container {
+  border: 1px solid var(--color-border);
+  box-shadow: 0 0 30px rgba(255, 159, 28, 0.08), inset 0 0 30px rgba(255, 159, 28, 0.02);
+}
+
+/* Theme toggle button styling */
+[data-theme="ds9"] .theme-toggle {
+  font-family: 'VT323', monospace;
+  font-size: 1rem;
+  letter-spacing: 0.1em;
+  border-color: var(--lcars-orange);
 }
