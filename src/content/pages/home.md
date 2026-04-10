@@ -1,8 +1,8 @@
 ---
-title: "Warren Bruce Jackson"
-subtitle: "Physicist · Inventor · APS Fellow"
-intro: "Principal Scientist at Xerox PARC and Distinguished Technologist at HP Labs. Co-developer of photothermal deflection spectroscopy. Over 250 publications and 100+ patents spanning amorphous semiconductors, photovoltaics, thin-film electronics, and machine learning."
-photo: "/images/photo-placeholder.svg"
+title: Warren Bruce Jackson gggggg
+subtitle: Physicist · Inventor · APS Fellow
+intro: Principal Scientist at Xerox PARC and Distinguished Technologist at HP Labs. Co-developer of photothermal deflection spectroscopy. Over 250 publications and 100+ patents spanning amorphous semiconductors, photovoltaics, thin-film electronics, and machine learning.
+photo: /images/Warren-Jackson-4.webp
 ---
 
 ## About

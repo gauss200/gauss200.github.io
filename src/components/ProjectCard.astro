@@ -38,22 +38,18 @@ const years = year_end ? `${year_start}–${year_end}` : `${year_start}–presen
     margin-bottom: 1.5rem;
   }
   .project-card__link:hover .project-card {
-    box-shadow: 0 4px 16px var(--color-card-shadow);
-    border-color: var(--color-accent);
+    background: var(--color-bg-secondary);
   }
   .project-card {
     display: flex;
     gap: 1.25rem;
-    transition: box-shadow 0.2s, border-color 0.2s;
-    border: 1px solid transparent;
   }
   .project-card__image {
     flex-shrink: 0;
-    width: 180px;
-    height: 120px;
+    width: 160px;
+    height: 110px;
     overflow: hidden;
-    border-radius: var(--border-radius);
-    background: var(--color-bg-secondary);
+    border: 2px solid var(--color-border);
   }
   .project-card__image img {
     width: 100%;
@@ -61,15 +57,16 @@ const years = year_end ? `${year_start}–${year_end}` : `${year_start}–presen
     object-fit: cover;
   }
   .project-card__content { flex: 1; min-width: 0; }
-  .project-card__header { display: flex; align-items: baseline; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 0.5rem; }
-  .project-card__years { font-size: 0.85rem; color: var(--color-text-muted); }
-  .project-card__badge { font-size: 0.75rem; padding: 0.1rem 0.5rem; border-radius: 12px; text-transform: uppercase; }
-  .project-card__badge.active { background: var(--color-accent); color: white; }
-  .project-card__badge.completed { background: var(--color-bg-secondary); color: var(--color-text-muted); }
-  .project-card__summary { color: var(--color-text-muted); font-size: 0.95rem; }
+  .project-card__header { display: flex; align-items: baseline; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 0.25rem; }
+  .project-card__header h3 { text-decoration: underline; text-underline-offset: 2px; }
+  .project-card__years { font-size: 0.85rem; color: var(--color-text-muted); font-family: var(--font-mono); }
+  .project-card__badge { font-size: 0.7rem; padding: 0.1rem 0.4rem; border: 1px solid var(--color-border); text-transform: uppercase; font-family: var(--font-mono); letter-spacing: 0.05em; }
+  .project-card__badge.active { background: var(--color-accent); color: var(--color-bg); border-color: var(--color-accent); }
+  .project-card__badge.completed { background: transparent; color: var(--color-text-muted); }
+  .project-card__summary { color: var(--color-text-muted); font-size: 0.9rem; margin-top: 0.25rem; }
 
   @media (max-width: 580px) {
     .project-card { flex-direction: column; }
-    .project-card__image { width: 100%; height: 160px; }
+    .project-card__image { width: 100%; height: 140px; }
   }
 </style>

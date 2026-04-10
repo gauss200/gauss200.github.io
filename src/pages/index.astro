@@ -8,15 +8,19 @@ const { title, subtitle, intro, photo } = home!.data;
 ---
 <BaseLayout title="Home">
   <section class="hero">
+    <div class="hero__text">
+      <h1>{title}</h1>
+      {subtitle && <p class="hero__subtitle">{subtitle}</p>}
+      {intro && <p class="hero__intro">{intro}</p>}
+    </div>
     {photo && (
       <div class="hero__photo">
         <img src={photo} alt={title} />
       </div>
     )}
-    <h1>{title}</h1>
-    {subtitle && <p class="hero__subtitle">{subtitle}</p>}
-    {intro && <p class="hero__intro">{intro}</p>}
   </section>
+
+  <hr />
 
   <section class="about">
     <Content />
@@ -25,62 +29,60 @@ const { title, subtitle, intro, photo } = home!.data;
 
 <style>
   .hero {
-    padding: 4rem 0 2rem;
-    text-align: center;
+    padding: 3rem 0 2rem;
+    display: flex;
+    gap: 2rem;
+    align-items: flex-start;
+  }
+
+  .hero__text {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .hero h1 {
+    margin-bottom: 0.25rem;
+  }
+
+  .hero__subtitle {
+    font-size: 1rem;
+    color: var(--color-text-muted);
+    margin-bottom: 1.5rem;
+    font-style: italic;
+  }
+
+  .hero__intro {
+    color: var(--color-text);
+    font-size: 1rem;
+    line-height: 1.7;
   }
 
   .hero__photo {
-    width: 180px;
-    height: 180px;
-    margin: 0 auto 1.5rem;
-    border-radius: 50%;
-    overflow: hidden;
-    background: var(--color-bg-secondary);
+    flex-shrink: 0;
+    width: 200px;
+    border: 3px solid var(--color-border);
   }
 
   .hero__photo img {
     width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-
-  .hero h1 {
-    font-size: clamp(1.75rem, 5vw, 2.5rem);
-    margin-bottom: 0.5rem;
-  }
-
-  .hero__subtitle {
-    color: var(--color-accent);
-    font-size: clamp(0.9rem, 2.5vw, 1.1rem);
-    margin-bottom: 1.5rem;
-  }
-
-  .hero__intro {
-    max-width: 640px;
-    margin: 0 auto;
-    color: var(--color-text-muted);
-    font-size: clamp(0.85rem, 2vw, 1rem);
-  }
-
-  .about {
-    padding: 2rem 0;
+    display: block;
   }
 
   .about :global(h2) {
-    margin-bottom: 1rem;
+    margin-bottom: 0.75rem;
   }
 
   .about :global(p) {
     margin-bottom: 1rem;
   }
 
-  @media (max-width: 768px) {
+  @media (max-width: 600px) {
     .hero {
-      padding: 2.5rem 0 1.5rem;
+      flex-direction: column-reverse;
+      padding: 2rem 0 1.5rem;
     }
     .hero__photo {
       width: 140px;
-      height: 140px;
     }
   }
 </style>
