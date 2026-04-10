@@ -25,6 +25,9 @@ import QuantumTunneling from '../../components/diagrams/QuantumTunneling.astro';
         and energy transfers periodically between them. The coupling coefficient &kappa;
         and detuning &Delta;&beta; control the transfer efficiency and beat length.
       </p>
+      <div class="static-figure">
+        <img src="/images/diagrams/copropagating.svg" alt="Co-propagating coupled waveguides showing energy transfer through evanescent coupling" />
+      </div>
     </div>
     <CoupledWaveguides />
 
@@ -104,5 +107,15 @@ import QuantumTunneling from '../../components/diagrams/QuantumTunneling.astro';
     font-size: 0.95rem;
     line-height: 1.6;
     max-width: 680px;
+  }
+
+  .static-figure {
+    margin: 1.25rem 0;
+    border: 1px solid var(--color-border);
+  }
+
+  .static-figure img {
+    width: 100%;
+    display: block;
   }
 </style>
