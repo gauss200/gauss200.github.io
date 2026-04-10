@@ -1,0 +1,157 @@
+---
+// Coupled waveguide animation showing energy transfer between two waveguides
+// Uses Canvas API to animate the evanescent coupling
+---
+<div class="diagram-container">
+  <h3>Coupled Waveguides — Energy Transfer</h3>
+  <p class="diagram-desc">
+    Two waveguides exchange energy through evanescent field overlap.
+    The coupling coefficient &kappa; controls the beat length.
+  </p>
+  <div class="diagram-controls">
+    <label>
+      Coupling (&kappa;):
+      <input type="range" id="cw-kappa" min="0.5" max="5" step="0.1" value="2" />
+      <span id="cw-kappa-val">2.0</span>
+    </label>
+    <label>
+      Detuning (&Delta;&beta;):
+      <input type="range" id="cw-detuning" min="0" max="3" step="0.1" value="0" />
+      <span id="cw-detuning-val">0.0</span>
+    </label>
+  </div>
+  <canvas id="coupled-waveguides" width="800" height="300"></canvas>
+</div>
+
+<style>
+  .diagram-container {
+    margin: 2rem 0;
+    padding: 1.5rem;
+    background: var(--color-card-bg);
+    border-radius: var(--border-radius);
+    box-shadow: 0 2px 8px var(--color-card-shadow);
+  }
+
+  .diagram-desc {
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+  }
+
+  .diagram-controls {
+    display: flex;
+    gap: 2rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .diagram-controls label {
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  canvas {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: var(--border-radius);
+  }
+</style>
+
+<script>
+  const canvas = document.getElementById('coupled-waveguides') as HTMLCanvasElement;
+  const ctx = canvas.getContext('2d')!;
+  const kappaSlider = document.getElementById('cw-kappa') as HTMLInputElement;
+  const kappaVal = document.getElementById('cw-kappa-val')!;
+  const detuningSlider = document.getElementById('cw-detuning') as HTMLInputElement;
+  const detuningVal = document.getElementById('cw-detuning-val')!;
+
+  let time = 0;
+
+  kappaSlider.addEventListener('input', () => { kappaVal.textContent = parseFloat(kappaSlider.value).toFixed(1); });
+  detuningSlider.addEventListener('input', () => { detuningVal.textContent = parseFloat(detuningSlider.value).toFixed(1); });
+
+  function draw() {
+    const W = canvas.width;
+    const H = canvas.height;
+    const kappa = parseFloat(kappaSlider.value);
+    const deltaBeta = parseFloat(detuningSlider.value);
+
+    // Effective coupling
+    const omega = Math.sqrt(kappa * kappa + deltaBeta * deltaBeta);
+    const transferMax = (kappa * kappa) / (omega * omega);
+
+    ctx.clearRect(0, 0, W, H);
+
+    // Background
+    const isDark = document.documentElement.getAttribute('data-theme') === 'ds9';
+    ctx.fillStyle = isDark ? '#0a0a12' : '#fafaf8';
+    ctx.fillRect(0, 0, W, H);
+
+    // Waveguide centers
+    const y1 = H * 0.35;
+    const y2 = H * 0.65;
+    const guideHeight = 30;
+
+    // Draw waveguide boundaries
+    ctx.strokeStyle = isDark ? '#2a2d4a' : '#d4d0ca';
+    ctx.lineWidth = 1;
+    for (const y of [y1, y2]) {
+      ctx.beginPath();
+      ctx.moveTo(0, y - guideHeight / 2);
+      ctx.lineTo(W, y - guideHeight / 2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(0, y + guideHeight / 2);
+      ctx.lineTo(W, y + guideHeight / 2);
+      ctx.stroke();
+    }
+
+    // Draw propagating waves with amplitude modulation
+    for (let x = 0; x < W; x++) {
+      const z = (x / W) * 10; // normalized propagation distance
+      const amp1 = Math.cos(omega * z) * Math.cos(omega * z) * transferMax + (1 - transferMax);
+      const amp2 = Math.sin(omega * z) * Math.sin(omega * z) * transferMax;
+
+      const wave1 = amp1 * Math.sin(20 * z - time * 3);
+      const wave2 = amp2 * Math.sin(20 * z - time * 3);
+
+      // Waveguide 1
+      const alpha1 = Math.abs(amp1);
+      ctx.fillStyle = isDark
+        ? `rgba(232, 166, 64, ${alpha1 * 0.9})`
+        : `rgba(37, 99, 235, ${alpha1 * 0.9})`;
+      ctx.fillRect(x, y1 + wave1 * (guideHeight / 3) - 1, 1.5, 3);
+
+      // Waveguide 2
+      const alpha2 = Math.abs(amp2);
+      ctx.fillStyle = isDark
+        ? `rgba(232, 166, 64, ${alpha2 * 0.9})`
+        : `rgba(37, 99, 235, ${alpha2 * 0.9})`;
+      ctx.fillRect(x, y2 + wave2 * (guideHeight / 3) - 1, 1.5, 3);
+
+      // Evanescent field (faint connection between guides)
+      if (x % 4 === 0) {
+        const evanescent = Math.min(amp1, amp2) * 0.3;
+        ctx.fillStyle = isDark
+          ? `rgba(232, 166, 64, ${evanescent * 0.3})`
+          : `rgba(37, 99, 235, ${evanescent * 0.3})`;
+        ctx.fillRect(x, y1 + guideHeight / 2, 1, y2 - y1 - guideHeight);
+      }
+    }
+
+    // Labels
+    ctx.fillStyle = isDark ? '#c8cad8' : '#1a1a1a';
+    ctx.font = '12px system-ui';
+    ctx.fillText('Waveguide 1', 10, y1 - guideHeight / 2 - 5);
+    ctx.fillText('Waveguide 2', 10, y2 - guideHeight / 2 - 5);
+    ctx.fillText('z →', W - 30, H - 10);
+
+    time += 0.016;
+    requestAnimationFrame(draw);
+  }
+
+  draw();
+</script>
