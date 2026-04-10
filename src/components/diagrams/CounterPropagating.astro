@@ -1,0 +1,377 @@
+---
+// Counter-propagating waves with evanescent coupling
+// Shows how forward and backward traveling waves couple through evanescent fields
+// (e.g., Bragg gratings, distributed feedback structures, contradirectional couplers)
+---
+<div class="diagram-container">
+  <h3>Counter-Propagating Waves — Evanescent Coupling</h3>
+  <p class="diagram-desc">
+    A forward-traveling wave couples to a backward-traveling wave through periodic evanescent
+    interaction (as in Bragg gratings or contradirectional couplers). Energy transfers from the
+    forward mode into the reflected backward mode. At resonance, the structure acts as a mirror.
+  </p>
+  <div class="diagram-controls">
+    <label>
+      Coupling (&kappa;):
+      <input type="range" id="cp-kappa" min="0.2" max="4" step="0.1" value="1.5" />
+      <span id="cp-kappa-val">1.5</span>
+    </label>
+    <label>
+      Detuning (&Delta;&beta;):
+      <input type="range" id="cp-detuning" min="0" max="4" step="0.1" value="0" />
+      <span id="cp-detuning-val">0.0</span>
+    </label>
+    <label>
+      Structure length (L):
+      <input type="range" id="cp-length" min="1" max="8" step="0.5" value="4" />
+      <span id="cp-length-val">4.0</span>
+    </label>
+  </div>
+  <canvas id="counter-propagating" width="800" height="360"></canvas>
+</div>
+
+<style>
+  .diagram-container {
+    margin: 2rem 0;
+    padding: 1.5rem;
+    background: var(--color-card-bg);
+    border-radius: var(--border-radius);
+    box-shadow: 0 2px 8px var(--color-card-shadow);
+  }
+
+  .diagram-desc {
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+  }
+
+  .diagram-controls {
+    display: flex;
+    gap: 2rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .diagram-controls label {
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  canvas {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: var(--border-radius);
+  }
+</style>
+
+<script>
+  const canvas = document.getElementById('counter-propagating') as HTMLCanvasElement;
+  const ctx = canvas.getContext('2d')!;
+  const kappaSlider = document.getElementById('cp-kappa') as HTMLInputElement;
+  const kappaVal = document.getElementById('cp-kappa-val')!;
+  const detuningSlider = document.getElementById('cp-detuning') as HTMLInputElement;
+  const detuningVal = document.getElementById('cp-detuning-val')!;
+  const lengthSlider = document.getElementById('cp-length') as HTMLInputElement;
+  const lengthVal = document.getElementById('cp-length-val')!;
+
+  let time = 0;
+
+  kappaSlider.addEventListener('input', () => { kappaVal.textContent = parseFloat(kappaSlider.value).toFixed(1); });
+  detuningSlider.addEventListener('input', () => { detuningVal.textContent = parseFloat(detuningSlider.value).toFixed(1); });
+  lengthSlider.addEventListener('input', () => { lengthVal.textContent = parseFloat(lengthSlider.value).toFixed(1); });
+
+  // Solve coupled mode equations for counter-propagating waves:
+  //   dA/dz = -i*delta*A + i*kappa*B
+  //   dB/dz =  i*delta*B - i*kappa*A
+  // where A = forward wave, B = backward wave
+  // Boundary conditions: A(0) = 1, B(L) = 0
+  // Solution:
+  //   gamma = sqrt(kappa^2 - delta^2)  (for kappa > delta)
+  //   A(z) = [gamma*cosh(gamma*(L-z)) + i*delta*sinh(gamma*(L-z))] / [gamma*cosh(gamma*L) + i*delta*sinh(gamma*L)]
+  //   B(z) = [-i*kappa*sinh(gamma*(L-z))] / [gamma*cosh(gamma*L) + i*delta*sinh(gamma*L)]
+
+  function solveAmplitudes(kappa: number, delta: number, L: number, z: number): [number, number] {
+    if (kappa < 0.01) return [1, 0];
+
+    if (kappa > Math.abs(delta)) {
+      // Strong coupling regime (kappa > delta): hyperbolic solutions
+      const gamma = Math.sqrt(kappa * kappa - delta * delta);
+      const denomR = gamma * Math.cosh(gamma * L);
+      const denomI = delta * Math.sinh(gamma * L);
+      const denomMag2 = denomR * denomR + denomI * denomI;
+
+      // |A(z)|^2
+      const aNR = gamma * Math.cosh(gamma * (L - z));
+      const aNI = delta * Math.sinh(gamma * (L - z));
+      const aMag = Math.sqrt((aNR * aNR + aNI * aNI) / denomMag2);
+
+      // |B(z)|^2
+      const bN = kappa * Math.sinh(gamma * (L - z));
+      const bMag = Math.sqrt((bN * bN) / denomMag2);
+
+      return [aMag, bMag];
+    } else {
+      // Weak coupling regime (delta > kappa): oscillatory solutions
+      const q = Math.sqrt(delta * delta - kappa * kappa);
+      const denomR = q * Math.cos(q * L);
+      const denomI = delta * Math.sin(q * L);
+      const denomMag2 = denomR * denomR + denomI * denomI;
+      if (denomMag2 < 1e-10) return [1, 0];
+
+      const aNR = q * Math.cos(q * (L - z));
+      const aNI = delta * Math.sin(q * (L - z));
+      const aMag = Math.sqrt((aNR * aNR + aNI * aNI) / denomMag2);
+
+      const bN = kappa * Math.sin(q * (L - z));
+      const bMag = Math.sqrt((bN * bN) / denomMag2);
+
+      return [aMag, bMag];
+    }
+  }
+
+  function draw() {
+    const W = canvas.width;
+    const H = canvas.height;
+    const kappa = parseFloat(kappaSlider.value);
+    const delta = parseFloat(detuningSlider.value);
+    const L = parseFloat(lengthSlider.value);
+
+    ctx.clearRect(0, 0, W, H);
+
+    const isDark = document.documentElement.getAttribute('data-theme') === 'ds9';
+    ctx.fillStyle = isDark ? '#0a0a12' : '#fafaf8';
+    ctx.fillRect(0, 0, W, H);
+
+    const margin = { left: 40, right: 40, top: 30, bottom: 55 };
+    const plotW = W - margin.left - margin.right;
+    const plotH = (H - margin.top - margin.bottom - 30) / 2; // two rows
+    const waveH = plotH * 0.8;
+    const gapY = 15;
+
+    // Row 1: waveguide with waves
+    const row1Y = margin.top;
+    // Row 2: amplitude envelope plot
+    const row2Y = margin.top + plotH + gapY;
+
+    const color1 = isDark ? '#e8a640' : '#2563eb';     // forward wave
+    const color2 = isDark ? '#64b5f6' : '#dc2626';     // backward wave
+    const borderColor = isDark ? '#2a2d4a' : '#d4d0ca';
+    const textColor = isDark ? '#c8cad8' : '#1a1a1a';
+    const mutedColor = isDark ? '#7a7e9a' : '#5a5a5a';
+
+    // --- Row 1: Waveguide structure with counter-propagating waves ---
+
+    const guideTop = row1Y + 10;
+    const guideBottom = row1Y + plotH - 10;
+    const guideMidY = (guideTop + guideBottom) / 2;
+    const guideH = guideBottom - guideTop;
+
+    // Coupling region boundaries
+    const couplingStart = margin.left + plotW * 0.15;
+    const couplingEnd = margin.left + plotW * 0.85;
+    const couplingW = couplingEnd - couplingStart;
+
+    // Draw coupling region (periodic grating)
+    ctx.fillStyle = isDark ? 'rgba(232, 166, 64, 0.05)' : 'rgba(37, 99, 235, 0.04)';
+    ctx.fillRect(couplingStart, guideTop, couplingW, guideH);
+
+    // Grating lines (periodic perturbation)
+    ctx.strokeStyle = isDark ? 'rgba(232, 166, 64, 0.12)' : 'rgba(37, 99, 235, 0.1)';
+    ctx.lineWidth = 1;
+    const gratingPeriod = 12;
+    for (let gx = couplingStart; gx < couplingEnd; gx += gratingPeriod) {
+      ctx.beginPath();
+      ctx.moveTo(gx, guideTop);
+      ctx.lineTo(gx, guideBottom);
+      ctx.stroke();
+    }
+
+    // Waveguide boundaries
+    ctx.strokeStyle = borderColor;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(margin.left, guideTop);
+    ctx.lineTo(margin.left + plotW, guideTop);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(margin.left, guideBottom);
+    ctx.lineTo(margin.left + plotW, guideBottom);
+    ctx.stroke();
+
+    // Draw forward wave (→) in top half
+    ctx.beginPath();
+    ctx.strokeStyle = color1;
+    ctx.lineWidth = 2;
+    for (let px = 0; px <= plotW; px++) {
+      const x = margin.left + px;
+      const zNorm = px / plotW;
+
+      // Amplitude envelope from CMT solution
+      let amp: number;
+      if (x >= couplingStart && x <= couplingEnd) {
+        const zLocal = ((x - couplingStart) / couplingW) * L;
+        [amp] = solveAmplitudes(kappa, delta, L, zLocal);
+      } else if (x < couplingStart) {
+        amp = 1; // incident wave
+      } else {
+        const [aEnd] = solveAmplitudes(kappa, delta, L, L);
+        amp = aEnd; // transmitted wave
+      }
+
+      const waveY = guideMidY - guideH * 0.18;
+      const wave = amp * Math.sin(30 * zNorm - time * 3) * (guideH * 0.15);
+      const y = waveY + wave;
+
+      // Fade alpha with amplitude
+      ctx.globalAlpha = 0.3 + amp * 0.7;
+      if (px === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.globalAlpha = 1;
+    ctx.stroke();
+
+    // Draw backward wave (←) in bottom half
+    ctx.beginPath();
+    ctx.strokeStyle = color2;
+    ctx.lineWidth = 2;
+    for (let px = 0; px <= plotW; px++) {
+      const x = margin.left + px;
+      const zNorm = px / plotW;
+
+      let amp: number;
+      if (x >= couplingStart && x <= couplingEnd) {
+        const zLocal = ((x - couplingStart) / couplingW) * L;
+        [, amp] = solveAmplitudes(kappa, delta, L, zLocal);
+      } else if (x < couplingStart) {
+        const [, bStart] = solveAmplitudes(kappa, delta, L, 0);
+        amp = bStart; // reflected wave
+      } else {
+        amp = 0; // no backward wave past coupling region
+      }
+
+      const waveY = guideMidY + guideH * 0.18;
+      const wave = amp * Math.sin(-30 * zNorm - time * 3) * (guideH * 0.15);
+      const y = waveY + wave;
+
+      ctx.globalAlpha = 0.3 + amp * 0.7;
+      if (px === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.globalAlpha = 1;
+    ctx.stroke();
+
+    // Evanescent coupling arrows between waves (inside coupling region)
+    ctx.strokeStyle = isDark ? 'rgba(232, 166, 64, 0.15)' : 'rgba(37, 99, 235, 0.12)';
+    ctx.lineWidth = 1;
+    for (let x = couplingStart + 20; x < couplingEnd - 10; x += 25) {
+      const zLocal = ((x - couplingStart) / couplingW) * L;
+      const [aAmp, bAmp] = solveAmplitudes(kappa, delta, L, zLocal);
+      const coupling = Math.min(aAmp, bAmp + 0.1) * 0.6;
+      ctx.globalAlpha = coupling;
+      ctx.beginPath();
+      ctx.moveTo(x, guideMidY - guideH * 0.05);
+      ctx.lineTo(x, guideMidY + guideH * 0.05);
+      ctx.stroke();
+      // Small arrowhead
+      ctx.beginPath();
+      ctx.moveTo(x - 3, guideMidY + guideH * 0.02);
+      ctx.lineTo(x, guideMidY + guideH * 0.05);
+      ctx.lineTo(x + 3, guideMidY + guideH * 0.02);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+
+    // Direction arrows and labels
+    ctx.fillStyle = color1;
+    ctx.font = 'bold 11px system-ui';
+    ctx.fillText('Forward (A) →', margin.left + 5, guideTop - 3);
+
+    ctx.fillStyle = color2;
+    ctx.fillText('← Backward (B)', margin.left + 5, guideBottom + 14);
+
+    ctx.fillStyle = mutedColor;
+    ctx.font = '10px system-ui';
+    ctx.fillText('coupling region (grating)', couplingStart + couplingW / 2 - 60, guideBottom + 14);
+
+    // --- Row 2: Amplitude envelope plot ---
+
+    const plotTop = row2Y + 5;
+    const plotBottom = row2Y + plotH - 5;
+    const envPlotH = plotBottom - plotTop;
+
+    // Axes
+    ctx.strokeStyle = borderColor;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(margin.left, plotTop);
+    ctx.lineTo(margin.left, plotBottom);
+    ctx.lineTo(margin.left + plotW, plotBottom);
+    ctx.stroke();
+
+    // Y-axis labels
+    ctx.fillStyle = textColor;
+    ctx.font = '11px system-ui';
+    ctx.fillText('1.0', margin.left - 28, plotTop + 4);
+    ctx.fillText('0', margin.left - 12, plotBottom + 4);
+    ctx.fillText('|Amplitude|²', margin.left - 5, plotTop - 8);
+    ctx.fillText('z →', margin.left + plotW - 20, plotBottom + 14);
+
+    // Reflectivity annotation
+    const [, bAt0] = solveAmplitudes(kappa, delta, L, 0);
+    const R = bAt0 * bAt0;
+    const [aAtL] = solveAmplitudes(kappa, delta, L, L);
+    const T = aAtL * aAtL;
+    ctx.fillStyle = mutedColor;
+    ctx.font = '11px system-ui';
+    ctx.fillText(`R = ${(R * 100).toFixed(1)}%`, margin.left + plotW - 130, plotTop + 14);
+    ctx.fillText(`T = ${(T * 100).toFixed(1)}%`, margin.left + plotW - 65, plotTop + 14);
+
+    // Plot |A(z)|^2
+    ctx.beginPath();
+    ctx.strokeStyle = color1;
+    ctx.lineWidth = 2;
+    for (let px = 0; px <= plotW; px++) {
+      const zLocal = (px / plotW) * L;
+      const [aAmp] = solveAmplitudes(kappa, delta, L, zLocal);
+      const intensity = aAmp * aAmp;
+      const x = margin.left + px;
+      const y = plotBottom - intensity * envPlotH;
+      px === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    // Plot |B(z)|^2
+    ctx.beginPath();
+    ctx.strokeStyle = color2;
+    ctx.lineWidth = 2;
+    for (let px = 0; px <= plotW; px++) {
+      const zLocal = (px / plotW) * L;
+      const [, bAmp] = solveAmplitudes(kappa, delta, L, zLocal);
+      const intensity = bAmp * bAmp;
+      const x = margin.left + px;
+      const y = plotBottom - intensity * envPlotH;
+      px === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    // Legend
+    ctx.fillStyle = color1;
+    ctx.fillRect(margin.left + plotW - 130, plotTop + 22, 10, 10);
+    ctx.fillStyle = textColor;
+    ctx.font = '11px system-ui';
+    ctx.fillText('|A(z)|²', margin.left + plotW - 115, plotTop + 31);
+
+    ctx.fillStyle = color2;
+    ctx.fillRect(margin.left + plotW - 65, plotTop + 22, 10, 10);
+    ctx.fillStyle = textColor;
+    ctx.fillText('|B(z)|²', margin.left + plotW - 50, plotTop + 31);
+
+    time += 0.016;
+    requestAnimationFrame(draw);
+  }
+
+  draw();
+</script>

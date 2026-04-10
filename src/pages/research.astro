@@ -5,6 +5,7 @@ import CoupledWaveguides from '../components/diagrams/CoupledWaveguides.astro';
 import BlochSphere from '../components/diagrams/BlochSphere.astro';
 import RabiOscillations from '../components/diagrams/RabiOscillations.astro';
 import QuantumTunneling from '../components/diagrams/QuantumTunneling.astro';
+import CounterPropagating from '../components/diagrams/CounterPropagating.astro';
 import { getCollection, render } from 'astro:content';
 
 const projects = (await getCollection('projects')).sort((a, b) => a.data.order - b.data.order);
@@ -34,6 +35,7 @@ const projects = (await getCollection('projects')).sort((a, b) => a.data.order -
     </p>
 
     <CoupledWaveguides />
+    <CounterPropagating />
     <RabiOscillations />
     <QuantumTunneling />
     <BlochSphere />
