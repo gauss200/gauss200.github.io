@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import CoupledWaveguides from '../../components/diagrams/CoupledWaveguides.astro';
+import CoPropagatingModes from '../../components/diagrams/CoPropagatingModes.astro';
 import CounterPropagating from '../../components/diagrams/CounterPropagating.astro';
 import BlochSphere from '../../components/diagrams/BlochSphere.astro';
 import RabiOscillations from '../../components/diagrams/RabiOscillations.astro';
@@ -25,10 +26,8 @@ import QuantumTunneling from '../../components/diagrams/QuantumTunneling.astro';
         and energy transfers periodically between them. The coupling coefficient &kappa;
         and detuning &Delta;&beta; control the transfer efficiency and beat length.
       </p>
-      <div class="static-figure">
-        <img src="/images/diagrams/copropagating.svg" alt="Co-propagating coupled waveguides showing energy transfer through evanescent coupling" />
-      </div>
     </div>
+    <CoPropagatingModes />
     <CoupledWaveguides />
 
     <div class="diagram-intro">
