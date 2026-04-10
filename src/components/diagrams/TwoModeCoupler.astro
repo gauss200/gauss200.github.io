@@ -117,16 +117,21 @@
   //
   // Decompose initial state into eigenmodes, propagate, reconstruct.
 
-  function solve(z: number, kappa: number, db: number, beta: number, a10: number, a20: number):
+  // Solve with separate time parameter for carrier animation.
+  // The envelope (slow Omega variation) depends only on z.
+  // The carrier (fast beta oscillation) gets a time shift so it
+  // appears to propagate through the stationary envelope.
+  function solve(z: number, t: number, kappa: number, db: number, beta: number, a10: number, a20: number):
     { a1Re: number; a1Im: number; a2Re: number; a2Im: number; env1: number; env2: number } {
 
     if (kappa < 0.001 && Math.abs(db) < 0.001) {
-      // No coupling — just propagate with beta
-      const phase = beta * z;
+      const phase = beta * z - t;
+      const env1 = a10;
+      const env2 = a20;
       return {
         a1Re: a10 * Math.cos(phase), a1Im: -a10 * Math.sin(phase),
         a2Re: a20 * Math.cos(phase), a2Im: -a20 * Math.sin(phase),
-        env1: a10, env2: a20,
+        env1, env2,
       };
     }
 
@@ -143,31 +148,35 @@
       sinT = Math.sin(theta / 2);
     }
 
-    // Eigenvalues
-    const lp = beta + Omega;
-    const lm = beta - Omega;
-
     // Project initial state onto eigenmodes
-    // |+> = [cosT, sinT], |-> = [-sinT, cosT]
-    const cp = a10 * cosT + a20 * sinT;   // <+|psi0>
-    const cm = -a10 * sinT + a20 * cosT;  // <-|psi0>
+    const cp = a10 * cosT + a20 * sinT;
+    const cm = -a10 * sinT + a20 * cosT;
 
-    // Propagate: c_pm * exp(-i * lambda_pm * z)
-    const cpRe = cp * Math.cos(lp * z);
-    const cpIm = -cp * Math.sin(lp * z);
-    const cmRe = cm * Math.cos(lm * z);
-    const cmIm = -cm * Math.sin(lm * z);
+    // Envelope: compute at z only (no time shift) to get stationary envelope
+    const cpEnvRe = cp * Math.cos(Omega * z);
+    const cpEnvIm = -cp * Math.sin(Omega * z);
+    const cmEnvRe = cm * Math.cos(-Omega * z);
+    const cmEnvIm = -cm * Math.sin(-Omega * z);
 
-    // Reconstruct in original basis
-    // a1 = cosT * c+ + (-sinT) * c-
-    // a2 = sinT * c+ + cosT * c-
-    const a1Re = cosT * cpRe + (-sinT) * cmRe;
-    const a1Im = cosT * cpIm + (-sinT) * cmIm;
-    const a2Re = sinT * cpRe + cosT * cmRe;
-    const a2Im = sinT * cpIm + cosT * cmIm;
+    const a1EnvRe = cosT * cpEnvRe + (-sinT) * cmEnvRe;
+    const a1EnvIm = cosT * cpEnvIm + (-sinT) * cmEnvIm;
+    const a2EnvRe = sinT * cpEnvRe + cosT * cmEnvRe;
+    const a2EnvIm = sinT * cpEnvIm + cosT * cmEnvIm;
 
-    const env1 = Math.sqrt(a1Re * a1Re + a1Im * a1Im);
-    const env2 = Math.sqrt(a2Re * a2Re + a2Im * a2Im);
+    const env1 = Math.sqrt(a1EnvRe * a1EnvRe + a1EnvIm * a1EnvIm);
+    const env2 = Math.sqrt(a2EnvRe * a2EnvRe + a2EnvIm * a2EnvIm);
+
+    // Full field: envelope * carrier. The carrier propagates as exp(-i*(beta*z - t)).
+    // Multiply envelope phasor by carrier phase.
+    const carrierPhase = beta * z - t;
+    const cosC = Math.cos(carrierPhase);
+    const sinC = Math.sin(carrierPhase);
+
+    // a_full = a_env * exp(-i*carrier)
+    const a1Re = a1EnvRe * cosC - a1EnvIm * (-sinC);
+    const a1Im = a1EnvRe * (-sinC) + a1EnvIm * cosC;
+    const a2Re = a2EnvRe * cosC - a2EnvIm * (-sinC);
+    const a2Im = a2EnvRe * (-sinC) + a2EnvIm * cosC;
 
     return { a1Re, a1Im, a2Re, a2Im, env1, env2 };
   }
@@ -213,7 +222,7 @@
     const data: ReturnType<typeof solve>[] = [];
     for (let px = 0; px <= nPts; px++) {
       const z = (px / nPts) * totalZ;
-      data.push(solve(z + time * 0.8, kappa, db, beta, a10, a20));
+      data.push(solve(z, time * 3, kappa, db, beta, a10, a20));
     }
 
     // --- Row 1: Mode 1 field Re[a1(z)] ---
