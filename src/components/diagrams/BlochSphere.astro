@@ -131,10 +131,16 @@
     camera.lookAt(0, 0, 0);
 
     renderer.render(scene, camera);
-    requestAnimationFrame(animate);
+    if (isVisible) requestAnimationFrame(animate);
   }
 
-  animate();
+  let isVisible = false;
+  const observer = new IntersectionObserver(([entry]) => {
+    const wasVisible = isVisible;
+    isVisible = entry.isIntersecting;
+    if (isVisible && !wasVisible) requestAnimationFrame(animate);
+  }, { threshold: 0.1 });
+  observer.observe(container.closest('.diagram-container')!);
 
   // Resize handling
   window.addEventListener('resize', () => {

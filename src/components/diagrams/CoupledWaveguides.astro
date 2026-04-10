@@ -150,8 +150,14 @@
     ctx.fillText('z →', W - 30, H - 10);
 
     time += 0.016;
-    requestAnimationFrame(draw);
+    if (isVisible) requestAnimationFrame(draw);
   }
 
-  draw();
+  let isVisible = false;
+  const observer = new IntersectionObserver(([entry]) => {
+    const wasVisible = isVisible;
+    isVisible = entry.isIntersecting;
+    if (isVisible && !wasVisible) requestAnimationFrame(draw);
+  }, { threshold: 0.1 });
+  observer.observe(canvas.closest('.diagram-container')!);
 </script>
