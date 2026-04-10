@@ -1,0 +1,63 @@
+backend:
+  name: github
+  repo: YOUR_GITHUB_USERNAME/warren-jackson-site
+  branch: main
+
+media_folder: public/images
+public_folder: /images
+
+collections:
+  - name: publications
+    label: Publications
+    folder: src/content/publications
+    create: true
+    slug: "{{fields.year}}-{{slug}}"
+    fields:
+      - { label: Title, name: title, widget: string }
+      - { label: Authors, name: authors, widget: string }
+      - { label: Journal, name: journal, widget: string }
+      - { label: Year, name: year, widget: number, value_type: int }
+      - { label: DOI, name: doi, widget: string, required: false }
+      - { label: Abstract, name: abstract, widget: text, required: false }
+      - { label: Featured, name: featured, widget: boolean, default: false }
+      - { label: Body, name: body, widget: markdown }
+
+  - name: patents
+    label: Patents
+    folder: src/content/patents
+    create: true
+    slug: "{{fields.year}}-{{slug}}"
+    fields:
+      - { label: Title, name: title, widget: string }
+      - { label: Patent Number, name: patent_number, widget: string }
+      - { label: Year, name: year, widget: number, value_type: int }
+      - { label: Co-Inventors, name: co_inventors, widget: string, required: false }
+      - { label: Assignee, name: assignee, widget: string, required: false }
+      - { label: Abstract, name: abstract, widget: text, required: false }
+      - { label: Body, name: body, widget: markdown }
+
+  - name: projects
+    label: "Research Projects"
+    folder: src/content/projects
+    create: true
+    slug: "{{slug}}"
+    fields:
+      - { label: Title, name: title, widget: string }
+      - { label: Status, name: status, widget: select, options: ["active", "completed"] }
+      - { label: Start Year, name: year_start, widget: number, value_type: int }
+      - { label: End Year, name: year_end, widget: number, value_type: int, required: false }
+      - { label: Summary, name: summary, widget: text }
+      - { label: Display Order, name: order, widget: number, value_type: int, default: 0 }
+      - { label: Body, name: body, widget: markdown }
+
+  - name: hobbies
+    label: Hobbies
+    folder: src/content/hobbies
+    create: true
+    slug: "{{slug}}"
+    fields:
+      - { label: Title, name: title, widget: string }
+      - { label: Summary, name: summary, widget: text }
+      - { label: Image, name: image, widget: image, required: false }
+      - { label: Display Order, name: order, widget: number, value_type: int, default: 0 }
+      - { label: Body, name: body, widget: markdown }
