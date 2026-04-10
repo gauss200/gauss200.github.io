@@ -1,0 +1,30 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import ProjectCard from '../components/ProjectCard.astro';
+import { getCollection, render } from 'astro:content';
+
+const projects = (await getCollection('projects')).sort((a, b) => a.data.order - b.data.order);
+---
+<BaseLayout title="Research & Projects">
+  <section class="page-header">
+    <h1>Research & Projects</h1>
+    <p>Four decades of research spanning fundamental semiconductor physics, device engineering, and machine learning.</p>
+  </section>
+
+  <section>
+    {projects.map(async (project) => {
+      const { Content } = await render(project);
+      return (
+        <ProjectCard {...project.data}>
+          <Content />
+        </ProjectCard>
+      );
+    })}
+  </section>
+</BaseLayout>
+
+<style>
+  .page-header { padding: 3rem 0 2rem; }
+  .page-header h1 { margin-bottom: 0.5rem; }
+  .page-header p { color: var(--color-text-muted); }
+</style>

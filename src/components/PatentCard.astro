@@ -1,0 +1,26 @@
+---
+interface Props {
+  title: string;
+  patent_number: string;
+  year: number;
+  co_inventors?: string;
+  assignee?: string;
+}
+
+const { title, patent_number, year, co_inventors, assignee } = Astro.props;
+---
+<article class="card patent-card">
+  <h3 class="patent-card__title">{title}</h3>
+  <p class="patent-card__number">{patent_number} ({year})</p>
+  {co_inventors && <p class="patent-card__meta">Co-inventors: {co_inventors}</p>}
+  {assignee && <p class="patent-card__meta">Assigned to: {assignee}</p>}
+  <div class="patent-card__body"><slot /></div>
+</article>
+
+<style>
+  .patent-card { margin-bottom: 1.5rem; }
+  .patent-card__title { font-size: 1.05rem; margin-bottom: 0.25rem; }
+  .patent-card__number { font-size: 0.9rem; color: var(--color-accent); }
+  .patent-card__meta { font-size: 0.85rem; color: var(--color-text-muted); }
+  .patent-card__body { font-size: 0.9rem; margin-top: 0.5rem; }
+</style>

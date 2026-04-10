@@ -1,0 +1,31 @@
+---
+interface Props {
+  title: string;
+  authors: string;
+  journal: string;
+  year: number;
+  doi?: string;
+}
+
+const { title, authors, journal, year, doi } = Astro.props;
+---
+<article class="card pub-card">
+  <h3 class="pub-card__title">{title}</h3>
+  <p class="pub-card__authors">{authors}</p>
+  <p class="pub-card__meta">
+    <em>{journal}</em>, {year}
+    {doi && <a href={`https://doi.org/${doi}`} target="_blank" rel="noopener">DOI</a>}
+  </p>
+  <div class="pub-card__body">
+    <slot />
+  </div>
+</article>
+
+<style>
+  .pub-card { margin-bottom: 1.5rem; }
+  .pub-card__title { font-size: 1.05rem; margin-bottom: 0.25rem; }
+  .pub-card__authors { font-size: 0.9rem; color: var(--color-text-muted); }
+  .pub-card__meta { font-size: 0.85rem; color: var(--color-text-muted); margin-bottom: 0.5rem; }
+  .pub-card__meta a { margin-left: 0.5rem; }
+  .pub-card__body { font-size: 0.9rem; }
+</style>

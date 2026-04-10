@@ -1,0 +1,35 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+<BaseLayout title="Contact">
+  <section class="page-header">
+    <h1>Contact</h1>
+  </section>
+
+  <section class="contact-content">
+    <div class="card">
+      <h3>Get in Touch</h3>
+      <ul class="contact-list">
+        <li>
+          <strong>Google Scholar:</strong>
+          <a href="https://scholar.google.com/citations?user=PDhplXsAAAAJ" target="_blank" rel="noopener">
+            Warren B Jackson
+          </a>
+        </li>
+        <li>
+          <strong>ResearchGate:</strong>
+          <a href="https://www.researchgate.net/profile/Warren-Jackson-4" target="_blank" rel="noopener">
+            Warren Jackson
+          </a>
+        </li>
+      </ul>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .page-header { padding: 3rem 0 2rem; }
+  .contact-content { max-width: 600px; }
+  .contact-list { list-style: none; }
+  .contact-list li { padding: 0.75rem 0; border-bottom: 1px solid var(--color-border); }
+</style>
