@@ -1,18 +1,17 @@
 ---
-// EPR experiment spacetime diagram.
-// Vertical axis: time. Horizontal axis: spatial separation.
-// Two entangled spin-1/2 particles in a singlet state diverge from a common origin.
-// A measurement on one branch at angle theta collapses the other branch's spin.
-// Shows the conditional probability distribution P(phi) = sin^2((phi - theta)/2)
-// for the second measurement outcome as a function of measurement angle phi.
+// EPR experiment spacetime diagram with retroconsistency interpretation.
+// Static worldlines, two-headed arrows showing that the initial singlet
+// boundary condition at t=0 must be consistent with future measurements.
+// No spacelike communication required — consistency is enforced along
+// each timelike worldline independently.
 ---
 <div class="diagram-container">
-  <h3>EPR Experiment — Entangled Spin Singlet</h3>
+  <h3>EPR Experiment — Retroconsistency</h3>
   <p class="diagram-desc">
-    Two spin-½ particles are created in a singlet state |&psi;⟩ = (|&uarr;&darr;⟩ &minus; |&darr;&uarr;⟩)/&radic;2
-    and fly apart. A measurement on particle A along axis &theta; yields spin-up.
-    The probability of measuring spin-up on particle B along axis &phi; is
-    P(&uarr;) = sin²((&phi; &minus; &theta;)/2). Adjust &theta; and &phi; to explore the correlations.
+    Two spin-½ particles created in a singlet at t = 0 diverge along spacelike-separated
+    paths. No signal passes between the branches. Instead, the initial boundary condition
+    (singlet state) must be retroconsistent with the future measurements — the correlations
+    are enforced along each particle's own worldline (double arrows), not across space.
   </p>
   <div class="diagram-controls">
     <label>
@@ -80,12 +79,51 @@
   const phiValEl = document.getElementById('epr-phi-val')!;
   const mtimeSlider = document.getElementById('epr-mtime') as HTMLInputElement;
 
-  let time = 0;
+  thetaSlider.addEventListener('input', () => { thetaValEl.textContent = thetaSlider.value + '°'; redraw(); });
+  phiSlider.addEventListener('input', () => { phiValEl.textContent = phiSlider.value + '°'; redraw(); });
+  mtimeSlider.addEventListener('input', redraw);
 
-  thetaSlider.addEventListener('input', () => { thetaValEl.textContent = thetaSlider.value + '°'; });
-  phiSlider.addEventListener('input', () => { phiValEl.textContent = phiSlider.value + '°'; });
+  function drawDoubleArrow(
+    x1: number, y1: number, x2: number, y2: number,
+    color: string, headSize: number
+  ) {
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const len = Math.sqrt(dx * dx + dy * dy);
+    const ux = dx / len;
+    const uy = dy / len;
+    const px = -uy; // perpendicular
+    const py = ux;
 
-  function draw() {
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    ctx.lineWidth = 2;
+
+    // Shaft (inset from tips)
+    const inset = headSize + 2;
+    ctx.beginPath();
+    ctx.moveTo(x1 + ux * inset, y1 + uy * inset);
+    ctx.lineTo(x2 - ux * inset, y2 - uy * inset);
+    ctx.stroke();
+
+    // Arrowhead at end (x2, y2)
+    ctx.beginPath();
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - ux * headSize + px * headSize * 0.4, y2 - uy * headSize + py * headSize * 0.4);
+    ctx.lineTo(x2 - ux * headSize - px * headSize * 0.4, y2 - uy * headSize - py * headSize * 0.4);
+    ctx.closePath();
+    ctx.fill();
+
+    // Arrowhead at start (x1, y1)
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x1 + ux * headSize + px * headSize * 0.4, y1 + uy * headSize + py * headSize * 0.4);
+    ctx.lineTo(x1 + ux * headSize - px * headSize * 0.4, y1 + uy * headSize - py * headSize * 0.4);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  function redraw() {
     const W = canvas.width;
     const H = canvas.height;
     const thetaDeg = parseFloat(thetaSlider.value);
@@ -103,51 +141,39 @@
     const colorA = isDark ? '#e8a640' : '#e63946';
     const colorB = isDark ? '#64b5f6' : '#457b9d';
     const colorSinglet = isDark ? '#cc99ff' : '#7c3aed';
+    const colorRetro = isDark ? '#33cccc' : '#2a9d8f';
     const colorCorr = isDark ? '#33cccc' : '#2a9d8f';
     const textColor = isDark ? '#c8cad8' : '#1a1a1a';
     const mutedColor = isDark ? '#7a7e9a' : '#888';
     const axisColor = isDark ? '#1a1a4a' : '#e0e0e0';
     const lightconeColor = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)';
 
-    // Layout: left 60% is spacetime diagram, right 40% is correlation plot
+    // Layout
     const stW = W * 0.55;
     const corrX = W * 0.6;
     const corrW = W * 0.37;
-
     const margin = { top: 20, bottom: 40 };
     const stH = H - margin.top - margin.bottom;
 
-    // Origin point (singlet creation) — bottom center of spacetime diagram
     const originX = stW / 2;
     const originY = H - margin.bottom;
-
-    // Time runs upward
     const topY = margin.top;
 
-    // === Spacetime diagram (left) ===
+    // Worldline geometry
+    const velocity = 0.35;
+    const particleAx = (t: number) => originX - velocity * t * stH * 0.45;
+    const particleBx = (t: number) => originX + velocity * t * stH * 0.45;
+    const timeToY = (t: number) => originY - t * stH;
 
-    // Time axis
-    ctx.strokeStyle = axisColor;
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(originX, originY + 5);
-    ctx.lineTo(originX, topY);
-    ctx.stroke();
+    const mY = timeToY(mTimeFrac);
+    const mAx = particleAx(mTimeFrac);
+    const mBx = particleBx(mTimeFrac);
+    const topAx = particleAx(1);
+    const topBx = particleBx(1);
 
-    // Spatial axis
-    ctx.beginPath();
-    ctx.moveTo(15, originY);
-    ctx.lineTo(stW - 5, originY);
-    ctx.stroke();
+    // === Spacetime diagram ===
 
-    // Axis labels
-    ctx.fillStyle = mutedColor;
-    ctx.font = '11px system-ui';
-    ctx.fillText('t', originX + 6, topY + 5);
-    ctx.fillText('x', stW - 10, originY + 15);
-    ctx.fillText('0', originX + 5, originY + 15);
-
-    // Light cone (faint)
+    // Light cone
     ctx.fillStyle = lightconeColor;
     ctx.beginPath();
     ctx.moveTo(originX, originY);
@@ -156,7 +182,6 @@
     ctx.closePath();
     ctx.fill();
 
-    // Light cone edges
     ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
     ctx.lineWidth = 1;
     ctx.setLineDash([4, 6]);
@@ -170,77 +195,112 @@
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // Particle worldlines — diverging at constant velocity
-    const velocity = 0.35; // fraction of light speed
-    const particleAx = (t: number) => originX - velocity * t * stH * 0.45;
-    const particleBx = (t: number) => originX + velocity * t * stH * 0.45;
-    const timeToY = (t: number) => originY - t * stH;
-
-    // Measurement events
-    const mY = timeToY(mTimeFrac);
-    const mAx = particleAx(mTimeFrac);
-    const mBx = particleBx(mTimeFrac);
-
-    // Singlet creation event
+    // Axes
+    ctx.strokeStyle = axisColor;
+    ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.fillStyle = colorSinglet;
-    ctx.arc(originX, originY, 6, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = colorSinglet;
-    ctx.font = '11px system-ui';
-    ctx.textAlign = 'center';
-    ctx.fillText('Singlet created', originX, originY + 18);
-    ctx.textAlign = 'left';
+    ctx.moveTo(originX, originY + 5);
+    ctx.lineTo(originX, topY);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(15, originY);
+    ctx.lineTo(stW - 5, originY);
+    ctx.stroke();
 
-    // Worldline A (left) — entangled before measurement, collapsed after
-    // Before measurement: wavy line (uncertain)
+    ctx.fillStyle = mutedColor;
+    ctx.font = '11px system-ui';
+    ctx.fillText('t', originX + 6, topY + 5);
+    ctx.fillText('x', stW - 10, originY + 15);
+
+    // Worldline A — static straight line
     ctx.strokeStyle = colorA;
     ctx.lineWidth = 2.5;
     ctx.beginPath();
     ctx.moveTo(originX, originY);
-    const stepsBeforeM = 40;
-    for (let i = 0; i <= stepsBeforeM; i++) {
-      const t = (i / stepsBeforeM) * mTimeFrac;
-      const x = particleAx(t);
-      const y = timeToY(t);
-      // Slight wobble to suggest superposition
-      const wobble = Math.sin(i * 0.8 + time * 3) * 3 * (1 - i / stepsBeforeM * 0.5);
-      ctx.lineTo(x + wobble, y);
-    }
+    ctx.lineTo(topAx, topY);
     ctx.stroke();
 
-    // After measurement: solid straight line
-    ctx.beginPath();
-    ctx.moveTo(mAx, mY);
-    ctx.lineTo(particleAx(1), topY);
-    ctx.stroke();
-
-    // Worldline B (right)
+    // Worldline B — static straight line
     ctx.strokeStyle = colorB;
     ctx.lineWidth = 2.5;
     ctx.beginPath();
     ctx.moveTo(originX, originY);
-    for (let i = 0; i <= stepsBeforeM; i++) {
-      const t = (i / stepsBeforeM) * mTimeFrac;
-      const x = particleBx(t);
-      const y = timeToY(t);
-      const wobble = Math.sin(i * 0.8 - time * 3 + 2) * 3 * (1 - i / stepsBeforeM * 0.5);
-      ctx.lineTo(x + wobble, y);
-    }
+    ctx.lineTo(topBx, topY);
     ctx.stroke();
 
+    // === Retroconsistency double arrows ===
+
+    // Arrow along branch A: from singlet (origin) to measurement A
+    // Offset slightly to the left of the worldline
+    const offsetA = -12;
+    const offsetB = 12;
+
+    // Branch A: origin → measurement
+    const aOrigX = originX + offsetA * 0.7;
+    const aOrigY = originY - 8;
+    const aMeasX = mAx + offsetA;
+    const aMeasY = mY + 4;
+    drawDoubleArrow(aOrigX, aOrigY, aMeasX, aMeasY, colorRetro, 7);
+
+    // Branch A: measurement → future
+    const aTopX = topAx + offsetA;
+    const aTopY = topY + 8;
+    drawDoubleArrow(aMeasX, aMeasY - 8, aTopX, aTopY, colorRetro, 7);
+
+    // Branch B: origin → measurement
+    const bOrigX = originX - offsetA * 0.7;
+    const bOrigY = originY - 8;
+    const bMeasX = mBx + offsetB;
+    const bMeasY = mY + 4;
+    drawDoubleArrow(bOrigX, bOrigY, bMeasX, bMeasY, colorRetro, 7);
+
+    // Branch B: measurement → future
+    const bTopX = topBx + offsetB;
+    const bTopY = topY + 8;
+    drawDoubleArrow(bMeasX, bMeasY - 8, bTopX, bTopY, colorRetro, 7);
+
+    // Retroconsistency labels
+    ctx.fillStyle = colorRetro;
+    ctx.font = 'italic 9px system-ui';
+    ctx.save();
+    // Label on branch A
+    const aLabelX = (aOrigX + aMeasX) / 2 - 8;
+    const aLabelY = (aOrigY + aMeasY) / 2;
+    ctx.translate(aLabelX, aLabelY);
+    const aAngle = Math.atan2(aMeasY - aOrigY, aMeasX - aOrigX);
+    ctx.rotate(aAngle);
+    ctx.fillText('retroconsistency', -40, -6);
+    ctx.restore();
+
+    ctx.save();
+    const bLabelX = (bOrigX + bMeasX) / 2 + 8;
+    const bLabelY = (bOrigY + bMeasY) / 2;
+    ctx.translate(bLabelX, bLabelY);
+    const bAngle = Math.atan2(bMeasY - bOrigY, bMeasX - bOrigX);
+    ctx.rotate(bAngle);
+    ctx.fillText('retroconsistency', -40, -6);
+    ctx.restore();
+
+    // Singlet creation event
     ctx.beginPath();
-    ctx.moveTo(mBx, mY);
-    ctx.lineTo(particleBx(1), topY);
-    ctx.stroke();
+    ctx.fillStyle = colorSinglet;
+    ctx.arc(originX, originY, 7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = colorSinglet;
+    ctx.font = '11px system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText('Singlet |ψ⟩ at t = 0', originX, originY + 20);
+    ctx.font = '9px system-ui';
+    ctx.fillText('(initial boundary condition)', originX, originY + 32);
+    ctx.textAlign = 'left';
 
-    // Measurement event A — apparatus
+    // Measurement event A
     ctx.fillStyle = colorA;
     ctx.beginPath();
     ctx.arc(mAx, mY, 5, 0, Math.PI * 2);
     ctx.fill();
 
-    // Spin arrow for A (result: spin up along theta)
+    // Spin arrow for A
     const arrowLen = 22;
     const aArrowX = mAx - 35;
     const aArrowY = mY;
@@ -250,30 +310,28 @@
     ctx.moveTo(aArrowX - arrowLen / 2 * Math.cos(theta), aArrowY + arrowLen / 2 * Math.sin(theta));
     ctx.lineTo(aArrowX + arrowLen / 2 * Math.cos(theta), aArrowY - arrowLen / 2 * Math.sin(theta));
     ctx.stroke();
-    // Arrowhead
-    const tipAx = aArrowX + arrowLen / 2 * Math.cos(theta);
-    const tipAy = aArrowY - arrowLen / 2 * Math.sin(theta);
+    const tipAx2 = aArrowX + arrowLen / 2 * Math.cos(theta);
+    const tipAy2 = aArrowY - arrowLen / 2 * Math.sin(theta);
     ctx.beginPath();
-    ctx.moveTo(tipAx, tipAy);
-    ctx.lineTo(tipAx - 6 * Math.cos(theta - 0.4), tipAy + 6 * Math.sin(theta - 0.4));
-    ctx.moveTo(tipAx, tipAy);
-    ctx.lineTo(tipAx - 6 * Math.cos(theta + 0.4), tipAy + 6 * Math.sin(theta + 0.4));
+    ctx.moveTo(tipAx2, tipAy2);
+    ctx.lineTo(tipAx2 - 6 * Math.cos(theta - 0.4), tipAy2 + 6 * Math.sin(theta - 0.4));
+    ctx.moveTo(tipAx2, tipAy2);
+    ctx.lineTo(tipAx2 - 6 * Math.cos(theta + 0.4), tipAy2 + 6 * Math.sin(theta + 0.4));
     ctx.stroke();
 
     ctx.fillStyle = colorA;
     ctx.font = '10px system-ui';
     ctx.textAlign = 'center';
     ctx.fillText(`↑ θ=${thetaDeg}°`, mAx - 35, mY - 18);
-    ctx.fillText('Meas. A', mAx, mY + 16);
+    ctx.fillText('Meas. A', mAx, mY + 18);
     ctx.textAlign = 'left';
 
-    // Measurement event B — apparatus
+    // Measurement event B
     ctx.fillStyle = colorB;
     ctx.beginPath();
     ctx.arc(mBx, mY, 5, 0, Math.PI * 2);
     ctx.fill();
 
-    // Spin arrow for B (measurement axis phi)
     const bArrowX = mBx + 35;
     const bArrowY = mY;
     ctx.strokeStyle = colorB;
@@ -282,23 +340,23 @@
     ctx.moveTo(bArrowX - arrowLen / 2 * Math.cos(phi), bArrowY + arrowLen / 2 * Math.sin(phi));
     ctx.lineTo(bArrowX + arrowLen / 2 * Math.cos(phi), bArrowY - arrowLen / 2 * Math.sin(phi));
     ctx.stroke();
-    const tipBx = bArrowX + arrowLen / 2 * Math.cos(phi);
-    const tipBy = bArrowY - arrowLen / 2 * Math.sin(phi);
+    const tipBx2 = bArrowX + arrowLen / 2 * Math.cos(phi);
+    const tipBy2 = bArrowY - arrowLen / 2 * Math.sin(phi);
     ctx.beginPath();
-    ctx.moveTo(tipBx, tipBy);
-    ctx.lineTo(tipBx - 6 * Math.cos(phi - 0.4), tipBy + 6 * Math.sin(phi - 0.4));
-    ctx.moveTo(tipBx, tipBy);
-    ctx.lineTo(tipBx - 6 * Math.cos(phi + 0.4), tipBy + 6 * Math.sin(phi + 0.4));
+    ctx.moveTo(tipBx2, tipBy2);
+    ctx.lineTo(tipBx2 - 6 * Math.cos(phi - 0.4), tipBy2 + 6 * Math.sin(phi - 0.4));
+    ctx.moveTo(tipBx2, tipBy2);
+    ctx.lineTo(tipBx2 - 6 * Math.cos(phi + 0.4), tipBy2 + 6 * Math.sin(phi + 0.4));
     ctx.stroke();
 
     ctx.fillStyle = colorB;
     ctx.font = '10px system-ui';
     ctx.textAlign = 'center';
     ctx.fillText(`φ=${phiDeg}°`, mBx + 35, mY - 18);
-    ctx.fillText('Meas. B', mBx, mY + 16);
+    ctx.fillText('Meas. B', mBx, mY + 18);
     ctx.textAlign = 'left';
 
-    // Spacelike separation indicator
+    // Spacelike separation — with X through it (no communication)
     ctx.strokeStyle = mutedColor;
     ctx.lineWidth = 1;
     ctx.setLineDash([3, 3]);
@@ -307,33 +365,36 @@
     ctx.lineTo(mBx - 8, mY);
     ctx.stroke();
     ctx.setLineDash([]);
-    ctx.fillStyle = mutedColor;
+
+    // X mark in the middle — no spacelike signal
+    const midSx = (mAx + mBx) / 2;
+    ctx.strokeStyle = isDark ? '#ff4444' : '#dc2626';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(midSx - 6, mY - 6);
+    ctx.lineTo(midSx + 6, mY + 6);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(midSx + 6, mY - 6);
+    ctx.lineTo(midSx - 6, mY + 6);
+    ctx.stroke();
+
+    ctx.fillStyle = isDark ? '#ff4444' : '#dc2626';
     ctx.font = '9px system-ui';
     ctx.textAlign = 'center';
-    ctx.fillText('spacelike separated', (mAx + mBx) / 2, mY - 6);
+    ctx.fillText('no spacelike signal', midSx, mY - 10);
     ctx.textAlign = 'left';
 
-    // Entanglement wiggly line connecting particles (before measurement)
-    ctx.strokeStyle = colorSinglet;
-    ctx.lineWidth = 1;
-    ctx.globalAlpha = 0.3;
-    const nWiggles = 12;
-    for (let tFrac = 0.05; tFrac < mTimeFrac; tFrac += 0.08) {
-      const ax = particleAx(tFrac);
-      const bx = particleBx(tFrac);
-      const y = timeToY(tFrac);
-      ctx.beginPath();
-      for (let i = 0; i <= nWiggles; i++) {
-        const frac = i / nWiggles;
-        const wx = ax + (bx - ax) * frac;
-        const wy = y + Math.sin(frac * Math.PI * 4 + time * 2 + tFrac * 10) * 3;
-        i === 0 ? ctx.moveTo(wx, wy) : ctx.lineTo(wx, wy);
-      }
-      ctx.stroke();
-    }
-    ctx.globalAlpha = 1;
+    // Worldline labels at top
+    ctx.fillStyle = colorA;
+    ctx.font = '10px system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText('A', topAx, topY - 5);
+    ctx.fillStyle = colorB;
+    ctx.fillText('B', topBx, topY - 5);
+    ctx.textAlign = 'left';
 
-    // === Right panel: Correlation / probability plot ===
+    // === Right panel: correlation plot ===
 
     const corrTop = margin.top + 20;
     const corrBottom = H - margin.bottom - 60;
@@ -341,7 +402,6 @@
     const corrLeft = corrX;
     const corrRight = corrX + corrW;
 
-    // Title
     ctx.fillStyle = textColor;
     ctx.font = '12px system-ui';
     ctx.textAlign = 'center';
@@ -357,7 +417,6 @@
     ctx.lineTo(corrRight, corrBottom);
     ctx.stroke();
 
-    // Y axis labels
     ctx.fillStyle = mutedColor;
     ctx.font = '10px system-ui';
     ctx.fillText('1', corrLeft - 14, corrTop + 4);
@@ -374,7 +433,7 @@
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // X axis: measurement angle phi of B (0 to 360)
+    // X axis labels
     ctx.fillStyle = mutedColor;
     ctx.font = '10px system-ui';
     ctx.textAlign = 'center';
@@ -386,7 +445,6 @@
     ctx.fillText('Measurement angle φ of B', corrLeft + corrW / 2, corrBottom + 28);
     ctx.textAlign = 'left';
 
-    // Tick marks on x axis
     for (let deg = 0; deg <= 360; deg += 90) {
       const x = corrLeft + (deg / 360) * corrW;
       ctx.strokeStyle = axisColor;
@@ -398,7 +456,6 @@
     }
 
     // P(up_B | up_A at theta) = sin^2((phi - theta) / 2)
-    // Plot as function of phi
     ctx.beginPath();
     ctx.strokeStyle = colorCorr;
     ctx.lineWidth = 2.5;
@@ -411,12 +468,11 @@
     }
     ctx.stroke();
 
-    // Mark current phi on the curve
+    // Current phi marker
     const currentProb = Math.sin((phi - theta) / 2) ** 2;
     const dotX = corrLeft + (phiDeg / 360) * corrW;
     const dotY = corrBottom - currentProb * corrH;
 
-    // Vertical line from axis to dot
     ctx.strokeStyle = colorB;
     ctx.lineWidth = 1;
     ctx.setLineDash([3, 3]);
@@ -426,19 +482,12 @@
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // Dot
     ctx.beginPath();
     ctx.fillStyle = colorB;
     ctx.arc(dotX, dotY, 5, 0, Math.PI * 2);
     ctx.fill();
 
-    // Probability readout
-    ctx.fillStyle = textColor;
-    ctx.font = '12px system-ui';
-    ctx.textAlign = 'center';
-    ctx.fillText(`P(↑) = ${currentProb.toFixed(3)}`, corrLeft + corrW / 2, corrBottom + 48);
-
-    // Mark theta position on x axis
+    // Theta marker
     const thetaPx = corrLeft + (thetaDeg / 360) * corrW;
     ctx.strokeStyle = colorA;
     ctx.lineWidth = 1.5;
@@ -450,7 +499,7 @@
     ctx.font = '9px system-ui';
     ctx.fillText(`θ=${thetaDeg}°`, thetaPx + 3, corrTop + 12);
 
-    // Mark theta + 180 (anti-correlated angle)
+    // Anti-correlated angle
     const antiDeg = (thetaDeg + 180) % 360;
     const antiPx = corrLeft + (antiDeg / 360) * corrW;
     ctx.strokeStyle = colorA;
@@ -464,9 +513,14 @@
     ctx.fillStyle = colorA;
     ctx.fillText(`θ+180°`, antiPx + 3, corrTop + 24);
 
+    // Probability readout
+    ctx.fillStyle = textColor;
+    ctx.font = '12px system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText(`P(↑) = ${currentProb.toFixed(3)}`, corrLeft + corrW / 2, corrBottom + 48);
     ctx.textAlign = 'left';
 
-    // Annotation: perfect anti-correlation note
+    // Annotation
     const diffDeg = Math.abs(((phiDeg - thetaDeg + 180) % 360) - 180);
     ctx.fillStyle = mutedColor;
     ctx.font = 'italic 10px system-ui';
@@ -477,16 +531,14 @@
     } else if (Math.abs(diffDeg - 90) < 5) {
       ctx.fillText('φ ⊥ θ → P(↑) = ½ — no correlation', corrLeft, corrBottom + 58);
     }
-
-    time += 0.016;
-    if (isVisible) requestAnimationFrame(draw);
   }
 
+  // Initial draw and observer
   let isVisible = false;
   const observer = new IntersectionObserver(([entry]) => {
-    const wasVisible = isVisible;
     isVisible = entry.isIntersecting;
-    if (isVisible && !wasVisible) requestAnimationFrame(draw);
+    if (isVisible) redraw();
   }, { threshold: 0.1 });
   observer.observe(canvas.closest('.diagram-container')!);
+  redraw();
 </script>
