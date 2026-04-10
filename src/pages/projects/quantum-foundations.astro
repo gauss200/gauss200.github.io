@@ -5,6 +5,7 @@ import CoPropagatingModes from '../../components/diagrams/CoPropagatingModes.ast
 import CounterPropagating from '../../components/diagrams/CounterPropagating.astro';
 import QuantumTunneling from '../../components/diagrams/QuantumTunneling.astro';
 import QuantumMeasurement from '../../components/diagrams/QuantumMeasurement.astro';
+import PeriodicCoupledModes from '../../components/diagrams/PeriodicCoupledModes.astro';
 ---
 <BaseLayout title="Foundations of Quantum Mechanics">
   <section class="page-header">
@@ -61,6 +62,19 @@ import QuantumMeasurement from '../../components/diagrams/QuantumMeasurement.ast
       </p>
     </div>
     <QuantumMeasurement />
+
+    <div class="diagram-intro">
+      <h2>Periodic Boundary Conditions — Eigenvalue Quantization</h2>
+      <p>
+        Two waveguides coupled by a matrix A with the constraint that the initial
+        state equals the final state: &psi;(0) = &psi;(L). This periodic boundary
+        condition quantizes the allowed propagation constants. Only eigenmodes whose
+        phase accumulation over L is a multiple of 2&pi; form self-consistent
+        standing patterns. Switch between symmetric, antisymmetric, and superposition
+        modes to see how the boundary condition constrains the system.
+      </p>
+    </div>
+    <PeriodicCoupledModes />
   </section>
 </BaseLayout>
 

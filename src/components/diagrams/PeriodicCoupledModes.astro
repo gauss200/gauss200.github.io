@@ -1,0 +1,454 @@
+---
+// Two coupled waveguides with matrix coupling A and periodic boundary conditions.
+// Initial state = final state: the wave pattern must self-consistently close.
+---
+<div class="diagram-container">
+  <h3>Coupled Waveguides with Periodic Boundary Conditions</h3>
+  <p class="diagram-desc">
+    Two waveguides are coupled by a 2×2 matrix A. The system has periodic boundary
+    conditions: the state at z = 0 must equal the state at z = L. Only certain
+    mode patterns are self-consistent — the eigenvalues of A determine which
+    propagation constants are allowed.
+  </p>
+  <div class="diagram-controls">
+    <label>
+      Coupling (&kappa;):
+      <input type="range" id="pbc-kappa" min="0.1" max="3" step="0.05" value="1.0" />
+      <span id="pbc-kappa-val">1.00</span>
+    </label>
+    <label>
+      Detuning (&Delta;&beta;):
+      <input type="range" id="pbc-detuning" min="0" max="2" step="0.05" value="0" />
+      <span id="pbc-detuning-val">0.00</span>
+    </label>
+    <label>
+      Length (L):
+      <input type="range" id="pbc-length" min="1" max="12" step="0.25" value="6" />
+      <span id="pbc-length-val">6.00</span>
+    </label>
+    <label>
+      Mode:
+      <select id="pbc-mode">
+        <option value="sym">Symmetric</option>
+        <option value="anti">Antisymmetric</option>
+        <option value="super">Superposition</option>
+      </select>
+    </label>
+  </div>
+  <canvas id="periodic-coupled" width="800" height="520"></canvas>
+</div>
+
+<style>
+  .diagram-container {
+    margin: 2rem 0;
+    padding: 1.5rem;
+    background: var(--color-card-bg);
+    border-radius: var(--border-radius);
+    box-shadow: 0 2px 8px var(--color-card-shadow);
+  }
+
+  .diagram-desc {
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+  }
+
+  .diagram-controls {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .diagram-controls label {
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .diagram-controls select {
+    font-size: 0.85rem;
+    padding: 0.15rem 0.3rem;
+    border: 1px solid var(--color-border);
+    background: var(--color-bg);
+    color: var(--color-text);
+  }
+
+  canvas {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: var(--border-radius);
+  }
+</style>
+
+<script>
+  const canvas = document.getElementById('periodic-coupled') as HTMLCanvasElement;
+  const ctx = canvas.getContext('2d')!;
+  const kappaSlider = document.getElementById('pbc-kappa') as HTMLInputElement;
+  const kappaValEl = document.getElementById('pbc-kappa-val')!;
+  const detuningSlider = document.getElementById('pbc-detuning') as HTMLInputElement;
+  const detuningValEl = document.getElementById('pbc-detuning-val')!;
+  const lengthSlider = document.getElementById('pbc-length') as HTMLInputElement;
+  const lengthValEl = document.getElementById('pbc-length-val')!;
+  const modeSelect = document.getElementById('pbc-mode') as HTMLSelectElement;
+
+  let time = 0;
+
+  kappaSlider.addEventListener('input', () => { kappaValEl.textContent = parseFloat(kappaSlider.value).toFixed(2); });
+  detuningSlider.addEventListener('input', () => { detuningValEl.textContent = parseFloat(detuningSlider.value).toFixed(2); });
+  lengthSlider.addEventListener('input', () => { lengthValEl.textContent = parseFloat(lengthSlider.value).toFixed(2); });
+
+  // Coupled mode theory with matrix A:
+  //   A = [[beta + db/2, kappa], [kappa, beta - db/2]]
+  // Eigenvalues: beta +/- Omega, where Omega = sqrt(kappa^2 + (db/2)^2)
+  // Eigenvectors:
+  //   Symmetric:      [cos(theta/2), sin(theta/2)]  with eigenvalue beta + Omega
+  //   Antisymmetric:  [-sin(theta/2), cos(theta/2)] with eigenvalue beta - Omega
+  //   where tan(theta) = 2*kappa / db
+  //
+  // Periodic BC: exp(-i * eigenvalue * L) = 1
+  //   => eigenvalue * L = 2*pi*n
+  //   We pick beta so that the selected mode satisfies this.
+
+  function draw() {
+    const W = canvas.width;
+    const H = canvas.height;
+    const kappa = parseFloat(kappaSlider.value);
+    const db = parseFloat(detuningSlider.value);
+    const L = parseFloat(lengthSlider.value);
+    const mode = modeSelect.value;
+
+    const isDark = document.documentElement.getAttribute('data-theme') === 'ds9';
+
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = isDark ? '#05050f' : '#fafafa';
+    ctx.fillRect(0, 0, W, H);
+
+    const color1 = isDark ? '#e8a640' : '#e63946';
+    const color2 = isDark ? '#64b5f6' : '#457b9d';
+    const colorCoupling = isDark ? '#33cccc' : '#2a9d8f';
+    const colorBC = isDark ? '#cc99ff' : '#7c3aed';
+    const textColor = isDark ? '#c8cad8' : '#1a1a1a';
+    const mutedColor = isDark ? '#7a7e9a' : '#888';
+    const axisColor = isDark ? '#1a1a4a' : '#e0e0e0';
+
+    const Omega = Math.sqrt(kappa * kappa + (db / 2) * (db / 2));
+    const theta = Math.atan2(2 * kappa, db); // mixing angle
+
+    // Eigenvector components
+    const cosT = Math.cos(theta / 2);
+    const sinT = Math.sin(theta / 2);
+
+    // For periodic BC, pick the lowest-order quantized beta
+    // Symmetric mode: beta_s = (2*pi*n_s) / L, where n_s = round(Omega*L/(2*pi))
+    // Antisymmetric mode: beta_a = (2*pi*n_a) / L
+    // We want the eigenvalue * L to be a multiple of 2*pi.
+    // eigenvalue_sym = beta + Omega => (beta + Omega)*L = 2*pi*n => beta = 2*pi*n/L - Omega
+    // eigenvalue_anti = beta - Omega => (beta - Omega)*L = 2*pi*m => beta = 2*pi*m/L + Omega
+
+    // Choose n so beta is positive and reasonable
+    const nSym = Math.max(1, Math.round((3 + Omega) * L / (2 * Math.PI)));
+    const betaSym = (2 * Math.PI * nSym) / L - Omega;
+    const nAnti = Math.max(1, Math.round((3 - Omega) * L / (2 * Math.PI)));
+    const betaAnti = (2 * Math.PI * nAnti) / L + Omega;
+
+    // Initial state amplitudes for each waveguide
+    let a1_0: number, a2_0: number;
+    let betaUsed: number;
+    let modeLabel: string;
+
+    if (mode === 'sym') {
+      a1_0 = cosT;
+      a2_0 = sinT;
+      betaUsed = betaSym;
+      modeLabel = `Symmetric mode (n=${nSym})`;
+    } else if (mode === 'anti') {
+      a1_0 = -sinT;
+      a2_0 = cosT;
+      betaUsed = betaAnti;
+      modeLabel = `Antisymmetric mode (n=${nAnti})`;
+    } else {
+      // Superposition of both
+      a1_0 = (cosT - sinT) / Math.sqrt(2);
+      a2_0 = (sinT + cosT) / Math.sqrt(2);
+      betaUsed = (betaSym + betaAnti) / 2;
+      modeLabel = 'Superposition';
+    }
+
+    const margin = { left: 50, right: 30, top: 15, bottom: 35 };
+    const plotW = W - margin.left - margin.right;
+
+    // === Top: Waveguide diagram ===
+    const wgTop = margin.top;
+    const wgH = H * 0.48;
+    const guide1Y = wgTop + wgH * 0.3;
+    const guide2Y = wgTop + wgH * 0.7;
+    const guideH = 22;
+    const waveAmp = guideH * 0.4;
+    const k0 = 14;
+
+    // Boundary condition lines
+    const bcLeftX = margin.left;
+    const bcRightX = margin.left + plotW;
+
+    // BC markers
+    ctx.strokeStyle = colorBC;
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6, 4]);
+    ctx.beginPath();
+    ctx.moveTo(bcLeftX, wgTop + 5);
+    ctx.lineTo(bcLeftX, wgTop + wgH - 5);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(bcRightX, wgTop + 5);
+    ctx.lineTo(bcRightX, wgTop + wgH - 5);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // BC labels
+    ctx.fillStyle = colorBC;
+    ctx.font = '10px system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText('z = 0', bcLeftX, wgTop + wgH + 2);
+    ctx.fillText('z = L', bcRightX, wgTop + wgH + 2);
+    ctx.fillText('ψ(0) = ψ(L)', (bcLeftX + bcRightX) / 2, wgTop + wgH + 2);
+    ctx.textAlign = 'left';
+
+    // Waveguide boundaries
+    ctx.strokeStyle = axisColor;
+    ctx.lineWidth = 1;
+    for (const gy of [guide1Y, guide2Y]) {
+      ctx.beginPath();
+      ctx.moveTo(margin.left, gy - guideH / 2);
+      ctx.lineTo(margin.left + plotW, gy - guideH / 2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(margin.left, gy + guideH / 2);
+      ctx.lineTo(margin.left + plotW, gy + guideH / 2);
+      ctx.stroke();
+    }
+
+    // Coupling arrows
+    ctx.strokeStyle = colorCoupling;
+    ctx.lineWidth = 0.8;
+    ctx.globalAlpha = 0.3;
+    for (let ax = margin.left + 30; ax < margin.left + plotW - 20; ax += 40) {
+      ctx.beginPath();
+      ctx.moveTo(ax, guide1Y + guideH / 2 + 2);
+      ctx.lineTo(ax, guide2Y - guideH / 2 - 2);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+
+    // Matrix label
+    ctx.fillStyle = colorCoupling;
+    ctx.font = '11px system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText('A = [[β+Δβ/2, κ], [κ, β−Δβ/2]]', (bcLeftX + bcRightX) / 2, (guide1Y + guide2Y) / 2 + 3);
+    ctx.textAlign = 'left';
+
+    // Labels
+    ctx.fillStyle = color1;
+    ctx.font = '11px system-ui';
+    ctx.fillText('Waveguide 1', margin.left + 3, guide1Y - guideH / 2 - 4);
+    ctx.fillStyle = color2;
+    ctx.fillText('Waveguide 2', margin.left + 3, guide2Y - guideH / 2 - 4);
+
+    // Propagate state: for eigenmodes, the amplitude just picks up phase.
+    // General: [a1(z), a2(z)] = exp(-i*A*z) * [a1(0), a2(0)]
+    // Decompose into eigenmodes:
+    //   c_sym = a1_0*cosT + a2_0*sinT
+    //   c_anti = -a1_0*sinT + a2_0*cosT
+
+    const cSym = a1_0 * cosT + a2_0 * sinT;
+    const cAnti = -a1_0 * sinT + a2_0 * cosT;
+
+    const eigSym = betaUsed + Omega;
+    const eigAnti = betaUsed - Omega;
+
+    // Draw waves in waveguide 1
+    ctx.beginPath();
+    ctx.strokeStyle = color1;
+    ctx.lineWidth = 2;
+    for (let px = 0; px <= plotW; px++) {
+      const zFrac = px / plotW;
+      const z = zFrac * L;
+
+      // Reconstruct a1(z) from eigenmode decomposition
+      const symPhase = eigSym * z - time * 2;
+      const antiPhase = eigAnti * z - time * 2;
+      const a1Re = cSym * cosT * Math.cos(symPhase) + cAnti * (-sinT) * Math.cos(antiPhase);
+
+      const x = margin.left + px;
+      const y = guide1Y + a1Re * waveAmp;
+      px === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    // Draw waves in waveguide 2
+    ctx.beginPath();
+    ctx.strokeStyle = color2;
+    ctx.lineWidth = 2;
+    for (let px = 0; px <= plotW; px++) {
+      const zFrac = px / plotW;
+      const z = zFrac * L;
+
+      const symPhase = eigSym * z - time * 2;
+      const antiPhase = eigAnti * z - time * 2;
+      const a2Re = cSym * sinT * Math.cos(symPhase) + cAnti * cosT * Math.cos(antiPhase);
+
+      const x = margin.left + px;
+      const y = guide2Y + a2Re * waveAmp;
+      px === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    // Draw boundary match indicators — dots at z=0 and z=L
+    for (const [gz, gColor, ampFn] of [
+      [guide1Y, color1, (z: number) => {
+        const sp = eigSym * z - time * 2;
+        const ap = eigAnti * z - time * 2;
+        return cSym * cosT * Math.cos(sp) + cAnti * (-sinT) * Math.cos(ap);
+      }],
+      [guide2Y, color2, (z: number) => {
+        const sp = eigSym * z - time * 2;
+        const ap = eigAnti * z - time * 2;
+        return cSym * sinT * Math.cos(sp) + cAnti * cosT * Math.cos(ap);
+      }],
+    ] as [number, string, (z: number) => number][]) {
+      const valStart = ampFn(0);
+      const valEnd = ampFn(L);
+
+      // Left dot
+      ctx.beginPath();
+      ctx.fillStyle = colorBC;
+      ctx.arc(bcLeftX, gz + valStart * waveAmp, 4, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Right dot
+      ctx.beginPath();
+      ctx.arc(bcRightX, gz + valEnd * waveAmp, 4, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Connecting arc to show periodicity
+      ctx.strokeStyle = colorBC;
+      ctx.lineWidth = 1;
+      ctx.globalAlpha = 0.25;
+      ctx.setLineDash([3, 3]);
+      ctx.beginPath();
+      const arcMidX = bcRightX + 25;
+      const yStart = gz + valStart * waveAmp;
+      const yEnd = gz + valEnd * waveAmp;
+      ctx.moveTo(bcRightX + 2, yEnd);
+      ctx.bezierCurveTo(arcMidX, yEnd, arcMidX, yStart, bcLeftX - 2, yStart);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.globalAlpha = 1;
+    }
+
+    // === Bottom: Amplitude plot ===
+    const plotTop = H * 0.56;
+    const plotBottom = H - margin.bottom;
+    const plotH = plotBottom - plotTop;
+
+    // Axes
+    ctx.strokeStyle = axisColor;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(margin.left, plotTop);
+    ctx.lineTo(margin.left, plotBottom);
+    ctx.lineTo(margin.left + plotW, plotBottom);
+    ctx.stroke();
+
+    // Mid-line
+    const midPlotY = plotTop + plotH / 2;
+    ctx.strokeStyle = axisColor;
+    ctx.lineWidth = 0.5;
+    ctx.beginPath();
+    ctx.moveTo(margin.left, midPlotY);
+    ctx.lineTo(margin.left + plotW, midPlotY);
+    ctx.stroke();
+
+    ctx.fillStyle = textColor;
+    ctx.font = '10px system-ui';
+    ctx.fillText('Re[a]', margin.left - 35, midPlotY + 3);
+    ctx.fillText('z →', margin.left + plotW - 20, plotBottom + 13);
+
+    // BC lines on plot
+    ctx.strokeStyle = colorBC;
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([6, 4]);
+    ctx.beginPath();
+    ctx.moveTo(margin.left, plotTop);
+    ctx.lineTo(margin.left, plotBottom);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(margin.left + plotW, plotTop);
+    ctx.lineTo(margin.left + plotW, plotBottom);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Plot a1(z) and a2(z)
+    const plotAmpScale = plotH * 0.4;
+
+    ctx.beginPath();
+    ctx.strokeStyle = color1;
+    ctx.lineWidth = 2;
+    for (let px = 0; px <= plotW; px++) {
+      const z = (px / plotW) * L;
+      const sp = eigSym * z - time * 2;
+      const ap = eigAnti * z - time * 2;
+      const val = cSym * cosT * Math.cos(sp) + cAnti * (-sinT) * Math.cos(ap);
+      const x = margin.left + px;
+      const y = midPlotY - val * plotAmpScale;
+      px === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.strokeStyle = color2;
+    ctx.lineWidth = 2;
+    for (let px = 0; px <= plotW; px++) {
+      const z = (px / plotW) * L;
+      const sp = eigSym * z - time * 2;
+      const ap = eigAnti * z - time * 2;
+      const val = cSym * sinT * Math.cos(sp) + cAnti * cosT * Math.cos(ap);
+      const x = margin.left + px;
+      const y = midPlotY - val * plotAmpScale;
+      px === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    // Legend and mode info
+    ctx.fillStyle = color1;
+    ctx.fillRect(margin.left + plotW - 150, plotTop + 8, 10, 10);
+    ctx.fillStyle = textColor;
+    ctx.font = '10px system-ui';
+    ctx.fillText('Re[a₁(z)]', margin.left + plotW - 135, plotTop + 17);
+
+    ctx.fillStyle = color2;
+    ctx.fillRect(margin.left + plotW - 150, plotTop + 24, 10, 10);
+    ctx.fillStyle = textColor;
+    ctx.fillText('Re[a₂(z)]', margin.left + plotW - 135, plotTop + 33);
+
+    ctx.fillStyle = mutedColor;
+    ctx.font = '11px system-ui';
+    ctx.fillText(modeLabel, margin.left + 5, plotTop + 17);
+    ctx.font = '10px system-ui';
+    ctx.fillText(`Ω = ${Omega.toFixed(2)}`, margin.left + 5, plotTop + 32);
+
+    time += 0.016;
+    if (isVisible) requestAnimationFrame(draw);
+  }
+
+  let isVisible = false;
+  const observer = new IntersectionObserver(([entry]) => {
+    const wasVisible = isVisible;
+    isVisible = entry.isIntersecting;
+    if (isVisible && !wasVisible) requestAnimationFrame(draw);
+  }, { threshold: 0.1 });
+  observer.observe(canvas.closest('.diagram-container')!);
+</script>
