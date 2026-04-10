@@ -27,8 +27,18 @@
     border-color: var(--color-accent);
   }
 
+  .theme-toggle__academic,
+  .theme-toggle__ds9 {
+    display: flex;
+    align-items: center;
+    padding: 0.15rem;
+  }
+
   [data-theme="academic"] .theme-toggle__academic {
     opacity: 1;
+    background: var(--color-accent);
+    color: var(--color-bg);
+    border-radius: 2px;
   }
 
   [data-theme="academic"] .theme-toggle__ds9 {
@@ -37,7 +47,9 @@
 
   [data-theme="ds9"] .theme-toggle__ds9 {
     opacity: 1;
-    color: var(--color-accent);
+    background: var(--color-accent);
+    color: var(--color-bg);
+    border-radius: 2px;
   }
 
   [data-theme="ds9"] .theme-toggle__academic {
