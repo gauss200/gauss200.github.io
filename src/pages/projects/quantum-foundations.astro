@@ -6,6 +6,7 @@ import CounterPropagating from '../../components/diagrams/CounterPropagating.ast
 import QuantumTunneling from '../../components/diagrams/QuantumTunneling.astro';
 import QuantumMeasurement from '../../components/diagrams/QuantumMeasurement.astro';
 import PeriodicCoupledModes from '../../components/diagrams/PeriodicCoupledModes.astro';
+import ContinuumDecay from '../../components/diagrams/ContinuumDecay.astro';
 ---
 <BaseLayout title="Foundations of Quantum Mechanics">
   <section class="page-header">
@@ -75,6 +76,18 @@ import PeriodicCoupledModes from '../../components/diagrams/PeriodicCoupledModes
       </p>
     </div>
     <PeriodicCoupledModes />
+
+    <div class="diagram-intro">
+      <h2>Coupling to a Continuum — Irreversible Decay</h2>
+      <p>
+        A system waveguide couples to N bath modes with random phase offsets.
+        With few modes, energy oscillates back and forth (Poincar&eacute; recurrence).
+        Increase N toward a continuum and the recurrence time diverges — the system
+        amplitude decays exponentially, recovering Fermi's golden rule. This is the
+        coupled-mode-theory origin of irreversibility in quantum mechanics.
+      </p>
+    </div>
+    <ContinuumDecay />
   </section>
 </BaseLayout>
 

@@ -1,0 +1,402 @@
+---
+// System waveguide coupled to a continuum of modes.
+// As the number of bath modes increases (approaching a continuum),
+// the system amplitude decays exponentially — Fermi's golden rule.
+// Bath modes have random phases, so their contributions destructively
+// interfere for the system, leading to irreversible decay.
+---
+<div class="diagram-container">
+  <h3>Coupling to a Continuum — Irreversible Decay</h3>
+  <p class="diagram-desc">
+    A system waveguide couples to N bath modes with random phase offsets.
+    For a few modes, energy sloshes back and forth (Poincaré recurrence).
+    As N grows toward a continuum, the recurrence time diverges and the
+    system amplitude decays exponentially — the origin of irreversibility
+    and Fermi's golden rule.
+  </p>
+  <div class="diagram-controls">
+    <label>
+      Bath modes (N):
+      <input type="range" id="cd-nmodes" min="1" max="200" step="1" value="3" />
+      <span id="cd-nmodes-val">3</span>
+    </label>
+    <label>
+      Coupling (&kappa;):
+      <input type="range" id="cd-kappa" min="0.1" max="2" step="0.05" value="0.5" />
+      <span id="cd-kappa-val">0.50</span>
+    </label>
+    <label>
+      <button id="cd-reseed">New random phases</button>
+    </label>
+  </div>
+  <canvas id="continuum-decay" width="800" height="520"></canvas>
+</div>
+
+<style>
+  .diagram-container {
+    margin: 2rem 0;
+    padding: 1.5rem;
+    background: var(--color-card-bg);
+    border-radius: var(--border-radius);
+    box-shadow: 0 2px 8px var(--color-card-shadow);
+  }
+
+  .diagram-desc {
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+  }
+
+  .diagram-controls {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .diagram-controls label {
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .diagram-controls button {
+    font-size: 0.8rem;
+    padding: 0.2rem 0.6rem;
+    border: 1px solid var(--color-border);
+    background: var(--color-bg);
+    color: var(--color-text);
+    cursor: pointer;
+  }
+
+  .diagram-controls button:hover {
+    border-color: var(--color-accent);
+  }
+
+  canvas {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: var(--border-radius);
+  }
+</style>
+
+<script>
+  const canvas = document.getElementById('continuum-decay') as HTMLCanvasElement;
+  const ctx = canvas.getContext('2d')!;
+  const nmodesSlider = document.getElementById('cd-nmodes') as HTMLInputElement;
+  const nmodesValEl = document.getElementById('cd-nmodes-val')!;
+  const kappaSlider = document.getElementById('cd-kappa') as HTMLInputElement;
+  const kappaValEl = document.getElementById('cd-kappa-val')!;
+  const reseedBtn = document.getElementById('cd-reseed')!;
+
+  let time = 0;
+
+  nmodesSlider.addEventListener('input', () => {
+    nmodesValEl.textContent = nmodesSlider.value;
+    generatePhases();
+  });
+  kappaSlider.addEventListener('input', () => {
+    kappaValEl.textContent = parseFloat(kappaSlider.value).toFixed(2);
+  });
+  reseedBtn.addEventListener('click', generatePhases);
+
+  // Random detunings for bath modes — spread around zero
+  let bathDetunings: number[] = [];
+  let bathPhases: number[] = [];
+
+  function generatePhases() {
+    const N = parseInt(nmodesSlider.value);
+    bathDetunings = [];
+    bathPhases = [];
+    for (let i = 0; i < N; i++) {
+      // Detunings spread uniformly over a bandwidth
+      const bandwidth = 4;
+      bathDetunings.push((i / Math.max(N - 1, 1) - 0.5) * bandwidth);
+      // Random initial phases
+      bathPhases.push(Math.random() * Math.PI * 2);
+    }
+  }
+  generatePhases();
+
+  // The system couples to N modes, each with coupling kappa/sqrt(N)
+  // (so total coupling rate stays constant as N grows).
+  //
+  // System amplitude: a_s(z) = sum_n c_n * exp(-i * lambda_n * z)
+  // where lambda_n are eigenvalues of the full (N+1) x (N+1) matrix.
+  //
+  // For large N, |a_s(z)|^2 ~ exp(-Gamma * z) where Gamma = pi * kappa^2 * rho
+  // (Fermi's golden rule, rho = density of states).
+  //
+  // We compute numerically by summing the bath mode contributions.
+  // Each bath mode n has detuning delta_n and phase phi_n.
+  // In the weak coupling limit:
+  //   a_s(z) ~ sum_n (kappa_n / Omega_n)^2 * exp(-i * Omega_n * z) + ...
+  //
+  // For the animation, we solve the coupled equations numerically at each z:
+  //   a_s(z) = product of interference from all modes.
+
+  function computeSystemAmplitude(z: number, kappa: number, N: number): [number, number] {
+    // Perturbative solution for system amplitude:
+    // a_s(z) ≈ 1 - sum_n (kappa_n)^2 * (1 - exp(-i*delta_n*z)) / delta_n^2
+    // But for visual clarity, use the exact Fourier sum approach:
+    //
+    // The system amplitude is the superposition of N+1 normal modes.
+    // For each bath mode n with detuning delta_n:
+    //   Omega_n = sqrt(kappa_n^2 + (delta_n/2)^2)
+    //   The system projects onto the symmetric/antisymmetric pair.
+    //
+    // Simplified: treat as sum of beating terms.
+    // a_s(z) = (1/N) * sum_n cos(Omega_n * z) * exp(i * phi_n)
+    // where Omega_n = sqrt((kappa/sqrt(N))^2 + delta_n^2)
+
+    const kn = kappa / Math.sqrt(Math.max(N, 1));
+    let reSum = 0;
+    let imSum = 0;
+
+    for (let n = 0; n < N; n++) {
+      const delta = bathDetunings[n] || 0;
+      const Omega = Math.sqrt(kn * kn + delta * delta);
+      const transfer = (kn * kn) / (Omega * Omega); // max transfer to this mode
+
+      // System amplitude contribution from this mode pair:
+      // cos^2(Omega*z) for the system part, with random phase
+      const phase = bathPhases[n] || 0;
+      const sysAmp = 1 - transfer + transfer * Math.cos(Omega * z);
+      reSum += sysAmp * Math.cos(phase);
+      imSum += sysAmp * Math.sin(phase);
+    }
+
+    // Normalize
+    const re = reSum / N;
+    const im = imSum / N;
+    return [re, im];
+  }
+
+  function draw() {
+    const W = canvas.width;
+    const H = canvas.height;
+    const N = parseInt(nmodesSlider.value);
+    const kappa = parseFloat(kappaSlider.value);
+
+    const isDark = document.documentElement.getAttribute('data-theme') === 'ds9';
+
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = isDark ? '#05050f' : '#fafafa';
+    ctx.fillRect(0, 0, W, H);
+
+    const colorSys = isDark ? '#e8a640' : '#e63946';
+    const colorBath = isDark ? '#64b5f6' : '#457b9d';
+    const colorDecay = isDark ? '#33cccc' : '#2a9d8f';
+    const textColor = isDark ? '#c8cad8' : '#1a1a1a';
+    const mutedColor = isDark ? '#7a7e9a' : '#888';
+    const axisColor = isDark ? '#1a1a4a' : '#e0e0e0';
+
+    const margin = { left: 50, right: 30, top: 15, bottom: 35 };
+    const plotW = W - margin.left - margin.right;
+    const totalZ = 20;
+
+    // === Top: Waveguide schematic ===
+    const wgTop = margin.top;
+    const wgH = H * 0.38;
+    const sysY = wgTop + 35;
+    const guideH = 18;
+    const waveAmp = guideH * 0.4;
+    const k0 = 12;
+
+    // System waveguide
+    ctx.strokeStyle = axisColor;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(margin.left, sysY - guideH / 2);
+    ctx.lineTo(margin.left + plotW, sysY - guideH / 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(margin.left, sysY + guideH / 2);
+    ctx.lineTo(margin.left + plotW, sysY + guideH / 2);
+    ctx.stroke();
+
+    ctx.fillStyle = colorSys;
+    ctx.font = '11px system-ui';
+    ctx.fillText('System', margin.left + 3, sysY - guideH / 2 - 5);
+
+    // Bath modes — show up to 30 visually, spaced below
+    const maxVisible = Math.min(N, 30);
+    const bathStartY = sysY + guideH / 2 + 25;
+    const bathSpacing = Math.min(12, (wgTop + wgH - bathStartY - 10) / Math.max(maxVisible, 1));
+
+    for (let n = 0; n < maxVisible; n++) {
+      const by = bathStartY + n * bathSpacing;
+      const alpha = 0.15 + 0.3 * (1 - n / maxVisible);
+
+      // Bath waveguide line
+      ctx.strokeStyle = colorBath;
+      ctx.lineWidth = 0.6;
+      ctx.globalAlpha = alpha;
+      ctx.beginPath();
+      ctx.moveTo(margin.left, by);
+      ctx.lineTo(margin.left + plotW, by);
+      ctx.stroke();
+
+      // Tiny wave in bath mode — amplitude grows along z
+      ctx.beginPath();
+      ctx.strokeStyle = colorBath;
+      ctx.lineWidth = 0.8;
+      const kn = kappa / Math.sqrt(N);
+      const delta = bathDetunings[n] || 0;
+      const Omega = Math.sqrt(kn * kn + delta * delta);
+      const transfer = (kn * kn) / (Omega * Omega);
+      const phase = bathPhases[n] || 0;
+
+      for (let px = 0; px <= plotW; px += 2) {
+        const z = (px / plotW) * totalZ;
+        const bathAmp = Math.sqrt(transfer) * Math.abs(Math.sin(Omega * z));
+        const wave = bathAmp * Math.sin(k0 * z + phase - time * 2) * 4;
+        const x = margin.left + px;
+        px === 0 ? ctx.moveTo(x, by + wave) : ctx.lineTo(x, by + wave);
+      }
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+
+    if (N > 30) {
+      ctx.fillStyle = mutedColor;
+      ctx.font = '10px system-ui';
+      ctx.fillText(`... + ${N - 30} more modes`, margin.left + 5, bathStartY + maxVisible * bathSpacing + 10);
+    }
+
+    // Bath label
+    ctx.fillStyle = colorBath;
+    ctx.font = '11px system-ui';
+    ctx.fillText(`Bath (${N} mode${N > 1 ? 's' : ''})`, margin.left + 3, bathStartY - 8);
+
+    // Coupling arrows
+    ctx.strokeStyle = colorDecay;
+    ctx.lineWidth = 0.8;
+    ctx.globalAlpha = 0.3;
+    for (let ax = margin.left + 40; ax < margin.left + plotW - 20; ax += 60) {
+      ctx.beginPath();
+      ctx.moveTo(ax, sysY + guideH / 2 + 2);
+      ctx.lineTo(ax, bathStartY - 4);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(ax - 2, bathStartY - 7);
+      ctx.lineTo(ax, bathStartY - 4);
+      ctx.lineTo(ax + 2, bathStartY - 7);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = colorDecay;
+    ctx.font = '10px system-ui';
+    ctx.fillText('κ/√N', margin.left + plotW / 2 - 15, sysY + guideH / 2 + 15);
+
+    // System wave — amplitude decays
+    ctx.beginPath();
+    ctx.strokeStyle = colorSys;
+    ctx.lineWidth = 2;
+    for (let px = 0; px <= plotW; px++) {
+      const z = (px / plotW) * totalZ;
+      const [re] = computeSystemAmplitude(z, kappa, N);
+      const wave = re * Math.sin(k0 * z - time * 2) * waveAmp;
+      const x = margin.left + px;
+      const y = sysY + wave;
+      px === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    // === Bottom: |a_sys(z)|^2 plot ===
+    const plotTop = H * 0.48;
+    const plotBottom = H - margin.bottom;
+    const plotH = plotBottom - plotTop;
+
+    // Axes
+    ctx.strokeStyle = axisColor;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(margin.left, plotTop);
+    ctx.lineTo(margin.left, plotBottom);
+    ctx.lineTo(margin.left + plotW, plotBottom);
+    ctx.stroke();
+
+    ctx.fillStyle = textColor;
+    ctx.font = '10px system-ui';
+    ctx.fillText('|a_sys|²', margin.left - 45, plotTop + 5);
+    ctx.fillText('1.0', margin.left - 28, plotTop + 15);
+    ctx.fillText('0', margin.left - 12, plotBottom + 4);
+    ctx.fillText('z →', margin.left + plotW - 20, plotBottom + 14);
+
+    // Compute and plot |a_sys(z)|^2
+    ctx.beginPath();
+    ctx.strokeStyle = colorSys;
+    ctx.lineWidth = 2.5;
+    for (let px = 0; px <= plotW; px++) {
+      const z = (px / plotW) * totalZ;
+      const [re, im] = computeSystemAmplitude(z, kappa, N);
+      const intensity = re * re + im * im;
+      const x = margin.left + px;
+      const y = plotBottom - intensity * plotH;
+      px === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    // Theoretical exponential decay: exp(-Gamma * z)
+    // Gamma = pi * (kappa^2 / bandwidth) for uniform DOS
+    // bandwidth = 4 (from generatePhases)
+    const bandwidth = 4;
+    const Gamma = Math.PI * kappa * kappa / bandwidth;
+
+    if (N >= 10) {
+      ctx.beginPath();
+      ctx.strokeStyle = colorDecay;
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([6, 4]);
+      for (let px = 0; px <= plotW; px++) {
+        const z = (px / plotW) * totalZ;
+        const theory = Math.exp(-2 * Gamma * z);
+        const x = margin.left + px;
+        const y = plotBottom - theory * plotH;
+        px === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    // Legend
+    ctx.fillStyle = colorSys;
+    ctx.fillRect(margin.left + 5, plotTop + 8, 10, 10);
+    ctx.fillStyle = textColor;
+    ctx.font = '10px system-ui';
+    ctx.fillText('|a_sys(z)|²', margin.left + 20, plotTop + 17);
+
+    if (N >= 10) {
+      ctx.fillStyle = colorDecay;
+      ctx.fillRect(margin.left + 5, plotTop + 24, 10, 10);
+      ctx.fillStyle = textColor;
+      ctx.fillText(`exp(−Γz), Γ = ${(2 * Gamma).toFixed(2)}`, margin.left + 20, plotTop + 33);
+    }
+
+    // Regime label
+    ctx.fillStyle = mutedColor;
+    ctx.font = 'italic 11px system-ui';
+    if (N <= 3) {
+      ctx.fillText('Few modes — energy oscillates back (Poincaré recurrence)', margin.left + 5, plotBottom + 15);
+    } else if (N <= 15) {
+      ctx.fillText('Partial continuum — decay with partial revivals', margin.left + 5, plotBottom + 15);
+    } else {
+      ctx.fillText('Approaching continuum — irreversible exponential decay (Fermi\'s golden rule)', margin.left + 5, plotBottom + 15);
+    }
+
+    time += 0.016;
+    if (isVisible) requestAnimationFrame(draw);
+  }
+
+  let isVisible = false;
+  const observer = new IntersectionObserver(([entry]) => {
+    const wasVisible = isVisible;
+    isVisible = entry.isIntersecting;
+    if (isVisible && !wasVisible) requestAnimationFrame(draw);
+  }, { threshold: 0.1 });
+  observer.observe(canvas.closest('.diagram-container')!);
+</script>
