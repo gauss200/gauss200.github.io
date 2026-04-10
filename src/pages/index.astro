@@ -1,17 +1,70 @@
 ---
-
+import BaseLayout from '../layouts/BaseLayout.astro';
 ---
+<BaseLayout title="Home">
+  <section class="hero">
+    <h1>Warren Bruce Jackson</h1>
+    <p class="hero__subtitle">Physicist &middot; Inventor &middot; APS Fellow</p>
+    <p>
+      Principal Scientist at Xerox PARC and Distinguished Technologist at HP Labs.
+      Co-developer of photothermal deflection spectroscopy. Over 250 publications
+      and 100+ patents spanning amorphous semiconductors, photovoltaics,
+      thin-film electronics, and machine learning.
+    </p>
+  </section>
 
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro</title>
-	</head>
-	<body>
-		<h1>Astro</h1>
-	</body>
-</html>
+  <section class="about">
+    <h2>About</h2>
+    <p>
+      Warren Bruce Jackson received his PhD in Physics from UC Berkeley (1981),
+      where he co-developed photothermal deflection spectroscopy (PDS) — a technique
+      now widely used for characterizing sub-bandgap absorption in semiconductors.
+    </p>
+    <p>
+      Over a 40+ year career at Xerox PARC and HP Labs, his research has spanned
+      the fundamental physics of hydrogenated amorphous silicon, metastable defect
+      formation (Staebler-Wronski effect), hydrogen diffusion, thin-film transistors,
+      flat-panel displays, photovoltaics, and machine learning.
+    </p>
+    <p>
+      He was elected a Fellow of the American Physical Society in 1995 for
+      "pioneering research in the fundamental properties of amorphous semiconductors."
+    </p>
+  </section>
+</BaseLayout>
+
+<style>
+  .hero {
+    padding: 4rem 0 2rem;
+    text-align: center;
+  }
+
+  .hero h1 {
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .hero__subtitle {
+    color: var(--color-accent);
+    font-size: 1.1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .hero p {
+    max-width: 640px;
+    margin: 0 auto;
+    color: var(--color-text-muted);
+  }
+
+  .about {
+    padding: 3rem 0;
+  }
+
+  .about h2 {
+    margin-bottom: 1rem;
+  }
+
+  .about p {
+    margin-bottom: 1rem;
+  }
+</style>

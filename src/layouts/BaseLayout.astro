@@ -1,0 +1,29 @@
+---
+import Nav from '../components/Nav.astro';
+import Footer from '../components/Footer.astro';
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  description?: string;
+}
+
+const { title, description = 'Warren Bruce Jackson — Physicist, Inventor, APS Fellow' } = Astro.props;
+---
+<!doctype html>
+<html lang="en" data-theme="academic">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <title>{title} | W.B. Jackson</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  </head>
+  <body>
+    <Nav />
+    <main class="container">
+      <slot />
+    </main>
+    <Footer />
+  </body>
+</html>
