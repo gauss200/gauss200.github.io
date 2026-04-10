@@ -1,0 +1,145 @@
+---
+// Side-by-side: CMT evanescent coupling ↔ quantum tunneling through a barrier
+---
+<div class="diagram-container">
+  <h3>Quantum Tunneling ↔ Evanescent Coupling</h3>
+  <p class="diagram-desc">
+    A quantum particle tunneling through a potential barrier is mathematically analogous
+    to evanescent coupling between waveguides. Both involve exponentially decaying fields
+    bridging a classically forbidden region.
+  </p>
+  <canvas id="tunneling-canvas" width="800" height="300"></canvas>
+</div>
+
+<style>
+  .diagram-container {
+    margin: 2rem 0; padding: 1.5rem;
+    background: var(--color-card-bg); border-radius: var(--border-radius);
+    box-shadow: 0 2px 8px var(--color-card-shadow);
+  }
+  .diagram-desc { color: var(--color-text-muted); font-size: 0.9rem; margin-bottom: 1rem; }
+  canvas { width: 100%; height: auto; display: block; border-radius: var(--border-radius); }
+</style>
+
+<script>
+  const canvas = document.getElementById('tunneling-canvas') as HTMLCanvasElement;
+  const ctx = canvas.getContext('2d')!;
+  let time = 0;
+
+  function draw() {
+    const W = canvas.width;
+    const H = canvas.height;
+    const isDark = document.documentElement.getAttribute('data-theme') === 'ds9';
+
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = isDark ? '#0a0a12' : '#fafaf8';
+    ctx.fillRect(0, 0, W, H);
+
+    const midX = W / 2;
+    const midY = H / 2;
+
+    // Left side: Quantum tunneling
+    ctx.fillStyle = isDark ? '#c8cad8' : '#1a1a1a';
+    ctx.font = 'bold 13px system-ui';
+    ctx.fillText('Quantum Tunneling', 40, 25);
+
+    // Potential barrier
+    const barrierX = midX * 0.35;
+    const barrierW = midX * 0.3;
+    ctx.fillStyle = isDark ? 'rgba(232, 166, 64, 0.1)' : 'rgba(37, 99, 235, 0.08)';
+    ctx.fillRect(barrierX, midY - 60, barrierW, 120);
+    ctx.strokeStyle = isDark ? '#e8a640' : '#2563eb';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(barrierX, midY - 60, barrierW, 120);
+
+    // Incident + transmitted wave
+    const accentColor = isDark ? '#e8a640' : '#2563eb';
+    ctx.strokeStyle = accentColor;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let x = 10; x < midX - 10; x++) {
+      let amp;
+      if (x < barrierX) {
+        amp = Math.sin(0.08 * x - time * 3) * 30;
+      } else if (x < barrierX + barrierW) {
+        const decay = Math.exp(-0.02 * (x - barrierX));
+        amp = Math.sin(0.08 * barrierX - time * 3) * 30 * decay;
+      } else {
+        const transmitted = Math.exp(-0.02 * barrierW) * 0.7;
+        amp = Math.sin(0.08 * x - time * 3) * 30 * transmitted;
+      }
+      const y = midY + amp;
+      x === 10 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    // Divider
+    ctx.strokeStyle = isDark ? '#2a2d4a' : '#d4d0ca';
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(midX, 10);
+    ctx.lineTo(midX, H - 10);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Right side: Evanescent coupling
+    ctx.fillStyle = isDark ? '#c8cad8' : '#1a1a1a';
+    ctx.fillText('Evanescent Coupling', midX + 40, 25);
+
+    const guideY1 = midY - 40;
+    const guideY2 = midY + 40;
+    const guideH = 20;
+
+    // Guide boundaries
+    ctx.strokeStyle = isDark ? '#2a2d4a' : '#d4d0ca';
+    ctx.lineWidth = 1;
+    for (const gy of [guideY1, guideY2]) {
+      ctx.beginPath();
+      ctx.moveTo(midX + 20, gy - guideH / 2);
+      ctx.lineTo(W - 10, gy - guideH / 2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(midX + 20, gy + guideH / 2);
+      ctx.lineTo(W - 10, gy + guideH / 2);
+      ctx.stroke();
+    }
+
+    // Waves in guides
+    ctx.strokeStyle = accentColor;
+    ctx.lineWidth = 2;
+    for (let g = 0; g < 2; g++) {
+      const gy = g === 0 ? guideY1 : guideY2;
+      ctx.beginPath();
+      for (let x = midX + 20; x < W - 10; x++) {
+        const z = (x - midX) / 80;
+        const amp = g === 0
+          ? Math.cos(1.5 * z) ** 2
+          : Math.sin(1.5 * z) ** 2;
+        const wave = amp * Math.sin(8 * z - time * 3) * (guideH / 3);
+        const y = gy + wave;
+        x === midX + 20 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+
+    // Evanescent field between guides
+    ctx.strokeStyle = isDark ? 'rgba(232, 166, 64, 0.2)' : 'rgba(37, 99, 235, 0.15)';
+    ctx.lineWidth = 1;
+    for (let x = midX + 30; x < W - 20; x += 8) {
+      ctx.beginPath();
+      ctx.moveTo(x, guideY1 + guideH / 2);
+      ctx.lineTo(x, guideY2 - guideH / 2);
+      ctx.stroke();
+    }
+
+    // Analogy arrow
+    ctx.fillStyle = isDark ? '#7a7e9a' : '#5a5a5a';
+    ctx.font = '11px system-ui';
+    ctx.fillText('≡ same math', midX - 35, H - 15);
+
+    time += 0.016;
+    requestAnimationFrame(draw);
+  }
+
+  draw();
+</script>
