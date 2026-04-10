@@ -7,6 +7,7 @@ import QuantumTunneling from '../../components/diagrams/QuantumTunneling.astro';
 import QuantumMeasurement from '../../components/diagrams/QuantumMeasurement.astro';
 import PeriodicCoupledModes from '../../components/diagrams/PeriodicCoupledModes.astro';
 import ContinuumDecay from '../../components/diagrams/ContinuumDecay.astro';
+import EPRExperiment from '../../components/diagrams/EPRExperiment.astro';
 ---
 <BaseLayout title="Foundations of Quantum Mechanics">
   <section class="page-header">
@@ -88,6 +89,19 @@ import ContinuumDecay from '../../components/diagrams/ContinuumDecay.astro';
       </p>
     </div>
     <ContinuumDecay />
+
+    <div class="diagram-intro">
+      <h2>EPR Experiment — Entangled Spin Correlations</h2>
+      <p>
+        Two spin-½ particles created in a singlet state diverge along spacelike-separated
+        worldlines. A spin-up measurement on particle A along axis &theta; instantaneously
+        constrains the statistics of particle B. The conditional probability
+        P(&uarr;) = sin²((&phi; &minus; &theta;)/2) shows perfect anti-correlation when
+        &phi; = &theta; and no correlation when &phi; &perp; &theta; — the signature
+        of quantum entanglement that violates Bell's inequality.
+      </p>
+    </div>
+    <EPRExperiment />
   </section>
 </BaseLayout>
 
