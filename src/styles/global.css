@@ -11,7 +11,7 @@ body {
   font-family: var(--font-body);
   background-color: var(--color-bg);
   color: var(--color-text);
-  line-height: 1.65;
+  line-height: 1.7;
   font-size: 1.05rem;
 }
 
@@ -19,12 +19,12 @@ h1, h2, h3, h4 {
   font-family: var(--font-heading);
   color: var(--color-heading);
   font-weight: 700;
-  line-height: 1.2;
+  line-height: 1.25;
 }
 
-h1 { font-size: 2.4rem; text-transform: uppercase; letter-spacing: -0.01em; }
-h2 { font-size: 1.5rem; text-transform: uppercase; letter-spacing: 0.02em; margin-top: 2rem; }
-h3 { font-size: 1.15rem; }
+h1 { font-size: 2rem; }
+h2 { font-size: 1.4rem; margin-top: 2rem; }
+h3 { font-size: 1.1rem; }
 
 a {
   color: var(--color-accent);
@@ -44,15 +44,9 @@ a:hover {
 
 .card {
   background: var(--color-card-bg);
-  border: 2px solid var(--color-border);
   border-radius: var(--border-radius);
   padding: 1.25rem;
-}
-
-hr, .divider {
-  border: none;
-  border-top: 2px solid var(--color-border);
-  margin: 2rem 0;
+  border-bottom: 1px solid var(--color-border);
 }
 
 /* Responsive diagram containers */
@@ -86,19 +80,14 @@ canvas {
   .container {
     padding: 0 1rem;
   }
-
   h1 { font-size: 1.6rem; }
   h2 { font-size: 1.25rem; }
-
-  .card {
-    padding: 1rem;
-  }
+  .card { padding: 1rem; }
 }
 
 @media (max-width: 480px) {
   .container {
     padding: 0 0.75rem;
   }
-
   h1 { font-size: 1.4rem; }
 }

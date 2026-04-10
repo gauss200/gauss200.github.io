@@ -1,18 +1,18 @@
-/* Brutalist academic theme — raw, structural, high-contrast */
+/* Clean professional academic theme */
 [data-theme="academic"] {
   --color-bg: #ffffff;
-  --color-bg-secondary: #ffffff;
-  --color-text: #000000;
-  --color-text-muted: #444444;
-  --color-heading: #000000;
-  --color-accent: #000000;
-  --color-accent-hover: #333333;
-  --color-border: #000000;
+  --color-bg-secondary: #f7f7f7;
+  --color-text: #1a1a1a;
+  --color-text-muted: #555555;
+  --color-heading: #111111;
+  --color-accent: #1a1a1a;
+  --color-accent-hover: #444444;
+  --color-border: #e0e0e0;
   --color-card-bg: #ffffff;
   --color-card-shadow: none;
   --color-nav-bg: #ffffff;
-  --color-nav-text: #000000;
-  --font-heading: 'Times New Roman', 'Georgia', serif;
+  --color-nav-text: #1a1a1a;
+  --font-heading: 'Inter', 'Helvetica Neue', 'Arial', sans-serif;
   --font-body: 'Times New Roman', 'Georgia', serif;
   --font-mono: 'Courier New', 'Courier', monospace;
   --border-radius: 0;
