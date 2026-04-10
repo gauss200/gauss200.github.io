@@ -44,3 +44,51 @@ a:hover {
   transition: background-color var(--transition-speed),
               box-shadow var(--transition-speed);
 }
+
+/* Responsive diagram containers */
+.diagram-container {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.diagram-controls {
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.diagram-controls label {
+  flex-wrap: wrap;
+  gap: 0.25rem 0.5rem;
+}
+
+.diagram-controls input[type="range"] {
+  min-width: 100px;
+  max-width: 200px;
+}
+
+canvas {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .container {
+    padding: 0 1rem;
+  }
+
+  h1 { font-size: 1.75rem; }
+  h2 { font-size: 1.35rem; }
+
+  .card {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 0 0.75rem;
+  }
+
+  h1 { font-size: 1.5rem; }
+}

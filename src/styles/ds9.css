@@ -200,7 +200,7 @@
 [data-theme="ds9"] .hero__subtitle {
   color: var(--lcars-teal) !important;
   font-family: 'VT323', monospace;
-  font-size: 1.4rem !important;
+  font-size: clamp(1.1rem, 3vw, 1.4rem) !important;
   letter-spacing: 0.15em;
 }
 

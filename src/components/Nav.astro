@@ -14,19 +14,26 @@ const currentPath = Astro.url.pathname;
 <nav class="nav">
   <div class="nav__inner container">
     <a href="/" class="nav__logo">W.B. Jackson</a>
-    <ul class="nav__links">
-      {links.map(link => (
-        <li>
-          <a
-            href={link.href}
-            class:list={['nav__link', { active: currentPath === link.href }]}
-          >
-            {link.label}
-          </a>
-        </li>
-      ))}
-    </ul>
-    <ThemeToggle />
+    <button class="nav__burger" id="nav-burger" aria-label="Toggle menu" aria-expanded="false">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+    <div class="nav__menu" id="nav-menu">
+      <ul class="nav__links">
+        {links.map(link => (
+          <li>
+            <a
+              href={link.href}
+              class:list={['nav__link', { active: currentPath === link.href }]}
+            >
+              {link.label}
+            </a>
+          </li>
+        ))}
+      </ul>
+      <ThemeToggle />
+    </div>
   </div>
 </nav>
 
@@ -52,6 +59,13 @@ const currentPath = Astro.url.pathname;
     font-size: 1.25rem;
     font-weight: 700;
     text-decoration: none;
+    flex-shrink: 0;
+  }
+
+  .nav__menu {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
   }
 
   .nav__links {
@@ -70,4 +84,82 @@ const currentPath = Astro.url.pathname;
   .nav__link:hover, .nav__link.active {
     opacity: 1;
   }
+
+  /* Burger button — hidden on desktop */
+  .nav__burger {
+    display: none;
+    flex-direction: column;
+    gap: 4px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+  }
+
+  .nav__burger span {
+    display: block;
+    width: 22px;
+    height: 2px;
+    background: var(--color-nav-text);
+    border-radius: 1px;
+    transition: transform 0.3s, opacity 0.3s;
+  }
+
+  /* Mobile */
+  @media (max-width: 768px) {
+    .nav__burger {
+      display: flex;
+    }
+
+    .nav__menu {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: var(--color-nav-bg);
+      flex-direction: column;
+      padding: 1rem 1.5rem 1.5rem;
+      gap: 1rem;
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .nav__menu.open {
+      display: flex;
+    }
+
+    .nav__links {
+      flex-direction: column;
+      gap: 0.75rem;
+      width: 100%;
+    }
+
+    .nav__link {
+      font-size: 1rem;
+      padding: 0.25rem 0;
+      display: block;
+    }
+
+    /* Burger open state */
+    .nav__burger[aria-expanded="true"] span:nth-child(1) {
+      transform: rotate(45deg) translate(4px, 4px);
+    }
+    .nav__burger[aria-expanded="true"] span:nth-child(2) {
+      opacity: 0;
+    }
+    .nav__burger[aria-expanded="true"] span:nth-child(3) {
+      transform: rotate(-45deg) translate(4px, -4px);
+    }
+  }
 </style>
+
+<script>
+  const burger = document.getElementById('nav-burger');
+  const menu = document.getElementById('nav-menu');
+
+  burger?.addEventListener('click', () => {
+    const expanded = burger.getAttribute('aria-expanded') === 'true';
+    burger.setAttribute('aria-expanded', String(!expanded));
+    menu?.classList.toggle('open');
+  });
+</script>

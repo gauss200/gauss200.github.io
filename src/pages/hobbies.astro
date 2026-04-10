@@ -25,5 +25,5 @@ const hobbies = (await getCollection('hobbies')).sort((a, b) => a.data.order - b
 
 <style>
   .page-header { padding: 3rem 0 2rem; }
-  .hobbies-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem; }
+  .hobbies-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr)); gap: 1.5rem; }
 </style>
