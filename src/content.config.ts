@@ -50,4 +50,14 @@ const hobbies = defineCollection({
   }),
 });
 
-export const collections = { publications, patents, projects, hobbies };
+const pages = defineCollection({
+  loader: glob({ pattern: '**/*.md', base: './src/content/pages' }),
+  schema: z.object({
+    title: z.string(),
+    subtitle: z.string().optional(),
+    intro: z.string().optional(),
+    photo: z.string().optional(),
+  }),
+});
+
+export const collections = { publications, patents, projects, hobbies, pages };

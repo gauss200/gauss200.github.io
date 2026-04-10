@@ -7,6 +7,18 @@ media_folder: public/images
 public_folder: /images
 
 collections:
+  - name: pages
+    label: Pages
+    folder: src/content/pages
+    create: false
+    slug: "{{slug}}"
+    fields:
+      - { label: Title, name: title, widget: string }
+      - { label: Subtitle, name: subtitle, widget: string, required: false }
+      - { label: Intro, name: intro, widget: text, required: false }
+      - { label: Photo, name: photo, widget: image, required: false }
+      - { label: Body, name: body, widget: markdown }
+
   - name: publications
     label: Publications
     folder: src/content/publications
