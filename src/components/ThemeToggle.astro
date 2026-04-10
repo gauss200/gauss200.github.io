@@ -1,0 +1,63 @@
+---
+// ThemeToggle: switches between Academic and DS9 mode
+---
+<button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme">
+  <span class="theme-toggle__academic">Academic</span>
+  <span class="theme-toggle__ds9">DS9 Mode</span>
+</button>
+
+<style>
+  .theme-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--color-bg-secondary);
+    border: 1px solid var(--color-border);
+    border-radius: 20px;
+    padding: 0.25rem 0.75rem;
+    cursor: pointer;
+    font-size: 0.8rem;
+    color: var(--color-text);
+    transition: all var(--transition-speed);
+  }
+
+  .theme-toggle:hover {
+    border-color: var(--color-accent);
+  }
+
+  [data-theme="academic"] .theme-toggle__academic {
+    font-weight: 700;
+  }
+
+  [data-theme="academic"] .theme-toggle__ds9 {
+    opacity: 0.5;
+  }
+
+  [data-theme="ds9"] .theme-toggle__ds9 {
+    font-weight: 700;
+    color: var(--color-accent);
+  }
+
+  [data-theme="ds9"] .theme-toggle__academic {
+    opacity: 0.5;
+  }
+</style>
+
+<script>
+  const toggle = document.getElementById('theme-toggle');
+  const root = document.documentElement;
+
+  function setTheme(theme: string) {
+    root.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+  }
+
+  // Init from localStorage or default to academic
+  const saved = localStorage.getItem('theme') || 'academic';
+  setTheme(saved);
+
+  toggle?.addEventListener('click', () => {
+    const current = root.getAttribute('data-theme');
+    setTheme(current === 'academic' ? 'ds9' : 'academic');
+  });
+</script>

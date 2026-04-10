@@ -1,0 +1,19 @@
+[data-theme="academic"] {
+  --color-bg: #fafaf8;
+  --color-bg-secondary: #f0eeeb;
+  --color-text: #1a1a1a;
+  --color-text-muted: #5a5a5a;
+  --color-heading: #0d2b45;
+  --color-accent: #2563eb;
+  --color-accent-hover: #1d4ed8;
+  --color-border: #d4d0ca;
+  --color-card-bg: #ffffff;
+  --color-card-shadow: rgba(0, 0, 0, 0.06);
+  --color-nav-bg: #0d2b45;
+  --color-nav-text: #f0eeeb;
+  --font-heading: 'Georgia', 'Times New Roman', serif;
+  --font-body: 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'Fira Code', 'Consolas', monospace;
+  --border-radius: 4px;
+  --transition-speed: 0.3s;
+}
