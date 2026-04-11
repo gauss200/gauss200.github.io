@@ -28,6 +28,11 @@
       <input type="range" id="ds-sigma" min="2" max="30" step="1" value="6" />
       <span id="ds-sigma-val">6</span>
     </label>
+    <label>
+      Detector position (y):
+      <input type="range" id="ds-detpos" min="0" max="500" step="1" value="250" />
+      <span id="ds-detpos-val">0</span>
+    </label>
   </div>
   <canvas id="double-slit" width="900" height="500"></canvas>
 </div>
@@ -72,6 +77,8 @@
   const lambdaValEl = document.getElementById('ds-lambda-val')!;
   const sigmaSlider = document.getElementById('ds-sigma') as HTMLInputElement;
   const sigmaValEl = document.getElementById('ds-sigma-val')!;
+  const detposSlider = document.getElementById('ds-detpos') as HTMLInputElement;
+  const detposValEl = document.getElementById('ds-detpos-val')!;
 
   let time = 0;
 
@@ -79,6 +86,11 @@
   widthSlider.addEventListener('input', () => widthValEl.textContent = widthSlider.value);
   lambdaSlider.addEventListener('input', () => lambdaValEl.textContent = lambdaSlider.value);
   sigmaSlider.addEventListener('input', () => sigmaValEl.textContent = sigmaSlider.value);
+  detposSlider.addEventListener('input', () => {
+    const midY = canvas.height / 2;
+    const yOffset = parseFloat(detposSlider.value) - midY;
+    detposValEl.textContent = (yOffset > 0 ? '+' : '') + yOffset.toFixed(0);
+  });
 
   function draw() {
     const W = canvas.width;
@@ -261,44 +273,87 @@
     ctx.lineTo(plotX, H);
     ctx.stroke();
 
-    // === Draw a detector icon on screen ===
-    // Gaussian envelope showing the detector response function
-    const detectorY = midY + d * 0.4; // position the detector off-center to show sampling
+    // === Movable detector ===
+    const detectorY = parseFloat(detposSlider.value);
+
+    // Compute |⟨det|ψ⟩|² at detector position
+    let overlapRe = 0, overlapIm = 0;
+    const detRange = Math.ceil(sigma * 4);
+    for (let dy = -detRange; dy <= detRange; dy++) {
+      const jy = Math.round(detectorY) + dy;
+      if (jy < 0 || jy >= nScreenPts) continue;
+      const gauss = Math.exp(-dy * dy / (2 * sigma * sigma));
+      overlapRe += fieldRe[jy] * gauss;
+      overlapIm += fieldIm[jy] * gauss;
+    }
+    const overlapSq = overlapRe * overlapRe + overlapIm * overlapIm;
+    const overlapNorm = overlapSq / Math.max(maxIntensity, 0.001);
+
+    // Highlight the detector region on screen
+    ctx.fillStyle = isDark ? 'rgba(51,204,204,0.15)' : 'rgba(42,157,143,0.1)';
+    ctx.fillRect(screenX - 8, detectorY - sigma * 3, 16, sigma * 6);
+
+    // Detector Gaussian profile
     ctx.strokeStyle = detectorColor;
-    ctx.lineWidth = 1.5;
+    ctx.lineWidth = 2;
     ctx.beginPath();
     for (let dy = -sigma * 4; dy <= sigma * 4; dy++) {
       const gauss = Math.exp(-dy * dy / (2 * sigma * sigma));
-      const x = screenX + 6 + gauss * 20;
+      const x = screenX + 8 + gauss * 25;
       const y = detectorY + dy;
       dy === -sigma * 4 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
     }
     ctx.stroke();
 
-    // Detector bracket
+    // Detector center marker
+    ctx.beginPath();
+    ctx.fillStyle = detectorColor;
+    ctx.arc(screenX, detectorY, 4, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Horizontal line from detector to intensity curve
+    const detIntensityX = plotX + overlapNorm * plotW;
     ctx.strokeStyle = detectorColor;
     ctx.lineWidth = 1;
     ctx.setLineDash([3, 3]);
     ctx.beginPath();
-    ctx.moveTo(screenX + 6, detectorY - sigma * 2);
-    ctx.lineTo(screenX + 30, detectorY - sigma * 2);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(screenX + 6, detectorY + sigma * 2);
-    ctx.lineTo(screenX + 30, detectorY + sigma * 2);
+    ctx.moveTo(screenX + 35, detectorY);
+    ctx.lineTo(detIntensityX, detectorY);
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // Sigma label
+    // Dot on intensity curve
+    ctx.beginPath();
+    ctx.fillStyle = detectorColor;
+    ctx.arc(detIntensityX, detectorY, 5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // |⟨det|ψ⟩|² readout
+    ctx.fillStyle = detectorColor;
+    ctx.font = 'bold 12px system-ui';
+    ctx.textAlign = 'left';
+    ctx.fillText(`|⟨det|ψ⟩|² = ${overlapNorm.toFixed(3)}`, plotX, H - 22);
+
+    // Sigma bracket
+    ctx.strokeStyle = detectorColor;
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath();
+    ctx.moveTo(screenX + 8, detectorY - sigma * 2);
+    ctx.lineTo(screenX + 36, detectorY - sigma * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(screenX + 8, detectorY + sigma * 2);
+    ctx.lineTo(screenX + 36, detectorY + sigma * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
     ctx.fillStyle = detectorColor;
     ctx.font = '10px system-ui';
-    ctx.fillText('σ', screenX + 32, detectorY + 3);
-
-    // Overlap integral annotation
-    ctx.fillStyle = detectorColor;
+    ctx.fillText('σ', screenX + 38, detectorY + 3);
     ctx.font = '9px system-ui';
     ctx.textAlign = 'center';
-    ctx.fillText('⟨det|ψ⟩', screenX + 18, detectorY - sigma * 2 - 6);
+    ctx.fillText('⟨det|ψ⟩', screenX + 22, detectorY - sigma * 2 - 6);
     ctx.textAlign = 'left';
 
     // === Labels ===
