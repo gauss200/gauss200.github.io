@@ -71,7 +71,20 @@ collections:
     slug: "{{slug}}"
     fields:
       - { label: Title, name: title, widget: string }
-      - { label: Diagram, name: diagram, widget: select, options: ["TwoModeCoupler", "CoPropagatingModes", "CoupledWaveguides", "CounterPropagating", "QuantumTunneling", "QuantumMeasurement", "PeriodicCoupledModes", "ContinuumDecay", "EPRExperiment", "FundamentalTheorem"] }
+      - label: Diagram
+        name: diagram
+        widget: select
+        options:
+          - { label: "Two Coupled Modes — Fields & Envelopes", value: "TwoModeCoupler" }
+          - { label: "Co-Propagating Coupled Modes", value: "CoPropagatingModes" }
+          - { label: "Coupled Waveguides — Energy Transfer", value: "CoupledWaveguides" }
+          - { label: "Counter-Propagating Waves", value: "CounterPropagating" }
+          - { label: "Quantum Tunneling ↔ Evanescent Coupling", value: "QuantumTunneling" }
+          - { label: "Quantum Measurement", value: "QuantumMeasurement" }
+          - { label: "Periodic Boundary Conditions", value: "PeriodicCoupledModes" }
+          - { label: "Coupling to a Continuum", value: "ContinuumDecay" }
+          - { label: "EPR Experiment", value: "EPRExperiment" }
+          - { label: "Fundamental Theorem of Calculus", value: "FundamentalTheorem" }
       - { label: Display Order, name: order, widget: number, value_type: int, default: 0 }
       - { label: Body, name: body, widget: markdown }
 
