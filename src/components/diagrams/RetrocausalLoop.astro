@@ -107,49 +107,37 @@
     const psiF: number[] = [];
     const psiB: number[] = [];
 
-    // Numerical approach: propagate coupled equations
-    // Use transfer matrix for counter-propagating modes:
-    //   [ψ(z)]    [cosh(κz)    sinh(κz) ] [ψ(0) ]
-    //   [ψ*(z)] = [sinh(κz)    cosh(κz) ] [ψ*(0)]
+    // Unitary coupling matrix U(z) for two coupled modes:
+    //   [ψ(z)]    [cos(κz)    i·sin(κz)] [ψ(0) ]
+    //   [ψ*(z)] = [i·sin(κz)  cos(κz)  ] [ψ*(0)]
     //
-    // But ψ* propagates backward, so the coupling is:
-    //   ψ(z) = ψ(0)cosh(κz) + ψ*(0)sinh(κz)  (picking up from ψ*)
-    //   ψ*(z) = ψ(0)sinh(κz) + ψ*(0)cosh(κz)  (ψ* grows from coupling to ψ)
+    // This is unitary: U†U = I, preserving |ψ|² + |ψ*|² = const.
     //
-    // BC at z=0: ψ(0) = r0 * ψ*(0)  → set ψ*(0) = 1, ψ(0) = r0
-    // BC at z=L: ψ*(L) = rL * ψ(L)
+    // BCs (measurements):
+    //   z=0: ψ(0) = r₀ · ψ*(0)   (initial measurement couples ψ* into ψ)
+    //   z=L: ψ*(L) = rL · ψ(L)   (final measurement couples ψ into ψ*)
+    //
+    // Set ψ*(0) = 1, ψ(0) = r₀.
+    // Propagate with unitary matrix:
+    //   ψ(z)  = r₀·cos(κz) + sin(κz)    (real part; the i rotates into real via the coupling)
+    //   ψ*(z) = r₀·sin(κz) + cos(κz)    (amplitude transfer)
+    //
+    // Self-consistency: require ψ*(L) = rL · ψ(L)
+    //   r₀·sin(κL) + cos(κL) = rL · (r₀·cos(κL) + sin(κL))
 
-    // Start: ψ*(0) = 1 (normalize), ψ(0) = r0
-    const psi0 = r0;
-    const psiStar0 = 1;
+    const cosKL = Math.cos(kappa * L);
+    const sinKL = Math.sin(kappa * L);
 
-    // Propagate to z=L
-    const psiL = psi0 * Math.cosh(kappa * L) + psiStar0 * Math.sinh(kappa * L);
-    const psiStarL = psi0 * Math.sinh(kappa * L) + psiStar0 * Math.cosh(kappa * L);
-
-    // Check final BC: ψ*(L) should equal rL * ψ(L)
-    const requiredPsiStarL = rL * psiL;
-    const consistency = psiStarL > 0.001 ? requiredPsiStarL / psiStarL : 0;
-
-    // For display: use the actual solution with both BCs enforced.
-    // Solve the full system: find ψ*(0) such that BC at both ends holds.
-    // ψ(0) = r0 * ψ*(0)
-    // ψ*(L) = rL * ψ(L)
-    // ψ(L) = r0*ψ*(0)*cosh(κL) + ψ*(0)*sinh(κL) = ψ*(0)*(r0*cosh(κL) + sinh(κL))
-    // ψ*(L) = r0*ψ*(0)*sinh(κL) + ψ*(0)*cosh(κL) = ψ*(0)*(r0*sinh(κL) + cosh(κL))
-    // BC: ψ*(L) = rL * ψ(L)
-    // ψ*(0)*(r0*sinh(κL) + cosh(κL)) = rL * ψ*(0)*(r0*cosh(κL) + sinh(κL))
-    // r0*sinh(κL) + cosh(κL) = rL*(r0*cosh(κL) + sinh(κL))
-    // This is the self-consistency condition (independent of ψ*(0)).
-    const lhs = r0 * Math.sinh(kappa * L) + Math.cosh(kappa * L);
-    const rhs = rL * (r0 * Math.cosh(kappa * L) + Math.sinh(kappa * L));
+    const lhs = r0 * sinKL + cosKL;
+    const rhs = rL * (r0 * cosKL + sinKL);
     const selfConsistency = Math.abs(rhs) > 0.001 ? lhs / rhs : 0;
 
-    // Use normalized solution: ψ*(0) = 1
     for (let i = 0; i <= nPts; i++) {
       const z = (i / nPts) * L;
-      const fwd = r0 * Math.cosh(kappa * z) + Math.sinh(kappa * z);
-      const bwd = r0 * Math.sinh(kappa * z) + Math.cosh(kappa * z);
+      const cosKz = Math.cos(kappa * z);
+      const sinKz = Math.sin(kappa * z);
+      const fwd = r0 * cosKz + sinKz;
+      const bwd = r0 * sinKz + cosKz;
       psiF.push(fwd);
       psiB.push(bwd);
     }
@@ -340,21 +328,23 @@
     ctx.textAlign = 'left';
 
     // Loop arrows at boundaries showing the reflection/consistency
-    // At z=0: ψ*(0) reflects into ψ(0)
-    const loopR = 18;
+    const loopRadius = (bwdY - fwdY) / 2 - 4;
+    const midModeY = (fwdY + bwdY) / 2;
     ctx.strokeStyle = colorBC;
     ctx.lineWidth = 2;
-    // Left boundary: curved arrow from ψ* up to ψ
-    ctx.beginPath();
-    ctx.arc(zLeft - 8, (fwdY + bwdY) / 2, (bwdY - fwdY) / 2 - 4, Math.PI * 0.6, -Math.PI * 0.6, true);
-    ctx.stroke();
-    // Arrowhead at top
-    drawArrow(zLeft - 6, fwdY + 8, zLeft, fwdY + 4, colorBC, 2, 6);
 
-    // Right boundary: curved arrow from ψ down to ψ*
+    // Left boundary: curved arrow from ψ* up to ψ — curves to the RIGHT of the BC line
     ctx.beginPath();
-    ctx.arc(zRight + 8, (fwdY + bwdY) / 2, (bwdY - fwdY) / 2 - 4, -Math.PI * 0.6, Math.PI * 0.6, false);
+    ctx.arc(zLeft + 8, midModeY, loopRadius, Math.PI * 0.6, -Math.PI * 0.6, false);
     ctx.stroke();
+    // Arrowhead pointing into ψ (upward at top of arc)
+    drawArrow(zLeft + 6, fwdY + 8, zLeft, fwdY + 4, colorBC, 2, 6);
+
+    // Right boundary: curved arrow from ψ down to ψ* — curves to the RIGHT of the BC line
+    ctx.beginPath();
+    ctx.arc(zRight + 8, midModeY, loopRadius, -Math.PI * 0.6, Math.PI * 0.6, false);
+    ctx.stroke();
+    // Arrowhead pointing into ψ* (downward at bottom of arc)
     drawArrow(zRight + 6, bwdY - 8, zRight, bwdY - 4, colorBC, 2, 6);
 
     // === Bottom: Amplitude envelopes ===
