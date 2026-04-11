@@ -1,0 +1,357 @@
+---
+// Double slit experiment.
+// A plane wave hits a barrier with two slits.
+// Circular wavefronts emerge from each slit and interfere.
+// A detector screen on the right samples the wavefunction via
+// overlap integral with a localized detector function.
+// The interference pattern is displayed on the screen.
+---
+<div class="diagram-container">
+  <div class="diagram-controls">
+    <label>
+      Slit separation (d):
+      <input type="range" id="ds-sep" min="20" max="120" step="2" value="60" />
+      <span id="ds-sep-val">60</span>
+    </label>
+    <label>
+      Slit width (w):
+      <input type="range" id="ds-width" min="4" max="30" step="1" value="10" />
+      <span id="ds-width-val">10</span>
+    </label>
+    <label>
+      Wavelength (&lambda;):
+      <input type="range" id="ds-lambda" min="8" max="40" step="1" value="16" />
+      <span id="ds-lambda-val">16</span>
+    </label>
+    <label>
+      Detector size (&sigma;):
+      <input type="range" id="ds-sigma" min="2" max="30" step="1" value="6" />
+      <span id="ds-sigma-val">6</span>
+    </label>
+  </div>
+  <canvas id="double-slit" width="900" height="500"></canvas>
+</div>
+
+<style>
+  .diagram-container {
+    margin: 2rem 0;
+    padding: 1.5rem;
+    background: var(--color-card-bg);
+    border-radius: var(--border-radius);
+    box-shadow: 0 2px 8px var(--color-card-shadow);
+  }
+  .diagram-controls {
+    display: flex;
+    gap: 1.25rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .diagram-controls label {
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  canvas {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: var(--border-radius);
+  }
+</style>
+
+<script>
+  const canvas = document.getElementById('double-slit') as HTMLCanvasElement;
+  const ctx = canvas.getContext('2d')!;
+  const sepSlider = document.getElementById('ds-sep') as HTMLInputElement;
+  const sepValEl = document.getElementById('ds-sep-val')!;
+  const widthSlider = document.getElementById('ds-width') as HTMLInputElement;
+  const widthValEl = document.getElementById('ds-width-val')!;
+  const lambdaSlider = document.getElementById('ds-lambda') as HTMLInputElement;
+  const lambdaValEl = document.getElementById('ds-lambda-val')!;
+  const sigmaSlider = document.getElementById('ds-sigma') as HTMLInputElement;
+  const sigmaValEl = document.getElementById('ds-sigma-val')!;
+
+  let time = 0;
+
+  sepSlider.addEventListener('input', () => sepValEl.textContent = sepSlider.value);
+  widthSlider.addEventListener('input', () => widthValEl.textContent = widthSlider.value);
+  lambdaSlider.addEventListener('input', () => lambdaValEl.textContent = lambdaSlider.value);
+  sigmaSlider.addEventListener('input', () => sigmaValEl.textContent = sigmaSlider.value);
+
+  function draw() {
+    const W = canvas.width;
+    const H = canvas.height;
+    const d = parseFloat(sepSlider.value);
+    const slitW = parseFloat(widthSlider.value);
+    const lambda = parseFloat(lambdaSlider.value);
+    const sigma = parseFloat(sigmaSlider.value);
+    const k = 2 * Math.PI / lambda;
+
+    const isDark = document.documentElement.getAttribute('data-theme') === 'ds9';
+
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = isDark ? '#05050f' : '#fafafa';
+    ctx.fillRect(0, 0, W, H);
+
+    const textColor = isDark ? '#c8cad8' : '#1a1a1a';
+    const mutedColor = isDark ? '#7a7e9a' : '#888';
+    const barrierColor = isDark ? '#4a4a6a' : '#555';
+    const wavePos = isDark ? 'rgba(232,166,64,' : 'rgba(230,57,70,';
+    const waveNeg = isDark ? 'rgba(100,181,246,' : 'rgba(69,123,157,';
+    const screenColor = isDark ? '#2a2d4a' : '#ddd';
+    const detectorColor = isDark ? '#33cccc' : '#2a9d8f';
+    const intensityColor = isDark ? '#e8a640' : '#e63946';
+
+    const midY = H / 2;
+
+    // Layout
+    const barrierX = W * 0.3;
+    const screenX = W * 0.72;
+    const plotX = W * 0.78;
+    const plotW = W * 0.18;
+
+    // Slit positions
+    const slit1Y = midY - d / 2;
+    const slit2Y = midY + d / 2;
+
+    // === Draw incoming plane wave (left of barrier) ===
+    for (let x = 10; x < barrierX - 2; x += 2) {
+      for (let y = 0; y < H; y += 2) {
+        const phase = k * x - time * 3;
+        const val = Math.cos(phase);
+        const alpha = Math.abs(val) * 0.25;
+        ctx.fillStyle = val > 0
+          ? wavePos + alpha + ')'
+          : waveNeg + alpha + ')';
+        ctx.fillRect(x, y, 2, 2);
+      }
+    }
+
+    // === Barrier ===
+    ctx.fillStyle = barrierColor;
+    // Top section
+    ctx.fillRect(barrierX - 3, 0, 6, slit1Y - slitW / 2);
+    // Middle section
+    ctx.fillRect(barrierX - 3, slit1Y + slitW / 2, 6, (slit2Y - slitW / 2) - (slit1Y + slitW / 2));
+    // Bottom section
+    ctx.fillRect(barrierX - 3, slit2Y + slitW / 2, 6, H - (slit2Y + slitW / 2));
+
+    // Slit openings highlight
+    ctx.fillStyle = isDark ? 'rgba(232,166,64,0.3)' : 'rgba(230,57,70,0.15)';
+    ctx.fillRect(barrierX - 3, slit1Y - slitW / 2, 6, slitW);
+    ctx.fillRect(barrierX - 3, slit2Y - slitW / 2, 6, slitW);
+
+    // === Diffracted waves (right of barrier) ===
+    // Compute wave field from two slits using Huygens' principle
+    // Each slit is a line source; integrate across slit width
+    const resolution = 3;
+    for (let x = barrierX + 4; x < screenX - 2; x += resolution) {
+      for (let y = 0; y < H; y += resolution) {
+        let re = 0, im = 0;
+
+        // Sum contributions from both slits
+        for (const slitY of [slit1Y, slit2Y]) {
+          // Integrate across slit width (sample a few points)
+          const nSamples = 5;
+          for (let s = 0; s < nSamples; s++) {
+            const sy = slitY - slitW / 2 + slitW * (s + 0.5) / nSamples;
+            const dx = x - barrierX;
+            const dy = y - sy;
+            const r = Math.sqrt(dx * dx + dy * dy);
+            // Cylindrical wave: amplitude ~ 1/sqrt(r), phase = kr
+            const amp = 1 / Math.sqrt(Math.max(r, 1));
+            const phase = k * r - time * 3;
+            re += amp * Math.cos(phase) / nSamples;
+            im += amp * Math.sin(phase) / nSamples;
+          }
+        }
+
+        const val = re; // Real part of total field
+        const alpha = Math.min(Math.abs(val) * 0.4, 0.5);
+        ctx.fillStyle = val > 0
+          ? wavePos + alpha + ')'
+          : waveNeg + alpha + ')';
+        ctx.fillRect(x, y, resolution, resolution);
+      }
+    }
+
+    // === Screen ===
+    ctx.fillStyle = screenColor;
+    ctx.fillRect(screenX - 2, 0, 4, H);
+
+    // === Compute interference pattern on screen ===
+    // The detector at position y has a Gaussian profile of width sigma.
+    // The measured intensity is |∫ ψ(y') G(y'-y, σ) dy'|²
+    // where ψ is the field at the screen and G is the detector response.
+    const nScreenPts = H;
+    const intensity: number[] = new Array(nScreenPts).fill(0);
+    let maxIntensity = 0;
+
+    // First compute the field at the screen for each y
+    const fieldRe: number[] = new Array(nScreenPts).fill(0);
+    const fieldIm: number[] = new Array(nScreenPts).fill(0);
+
+    for (let iy = 0; iy < nScreenPts; iy++) {
+      const y = iy;
+      let re = 0, im = 0;
+
+      for (const slitY of [slit1Y, slit2Y]) {
+        const nSamples = 7;
+        for (let s = 0; s < nSamples; s++) {
+          const sy = slitY - slitW / 2 + slitW * (s + 0.5) / nSamples;
+          const dx = screenX - barrierX;
+          const dy = y - sy;
+          const r = Math.sqrt(dx * dx + dy * dy);
+          const amp = 1 / Math.sqrt(Math.max(r, 1));
+          const phase = k * r;
+          re += amp * Math.cos(phase) / nSamples;
+          im += amp * Math.sin(phase) / nSamples;
+        }
+      }
+      fieldRe[iy] = re;
+      fieldIm[iy] = im;
+    }
+
+    // Convolve with detector Gaussian to get measured intensity
+    for (let iy = 0; iy < nScreenPts; iy++) {
+      let convergRe = 0, convergIm = 0;
+      const range = Math.ceil(sigma * 4);
+
+      for (let dy = -range; dy <= range; dy++) {
+        const jy = iy + dy;
+        if (jy < 0 || jy >= nScreenPts) continue;
+        const gauss = Math.exp(-dy * dy / (2 * sigma * sigma));
+        convergRe += fieldRe[jy] * gauss;
+        convergIm += fieldIm[jy] * gauss;
+      }
+
+      intensity[iy] = convergRe * convergRe + convergIm * convergIm;
+      if (intensity[iy] > maxIntensity) maxIntensity = intensity[iy];
+    }
+
+    // === Draw intensity pattern on screen ===
+    // Color bars on screen
+    for (let iy = 0; iy < nScreenPts; iy++) {
+      const norm = intensity[iy] / Math.max(maxIntensity, 0.001);
+      const alpha = norm * 0.9;
+      ctx.fillStyle = isDark
+        ? `rgba(232,166,64,${alpha})`
+        : `rgba(230,57,70,${alpha})`;
+      ctx.fillRect(screenX - 2, iy, 4, 1);
+    }
+
+    // === Plot intensity curve ===
+    ctx.beginPath();
+    ctx.strokeStyle = intensityColor;
+    ctx.lineWidth = 2;
+    for (let iy = 0; iy < nScreenPts; iy++) {
+      const norm = intensity[iy] / Math.max(maxIntensity, 0.001);
+      const x = plotX + norm * plotW;
+      iy === 0 ? ctx.moveTo(x, iy) : ctx.lineTo(x, iy);
+    }
+    ctx.stroke();
+
+    // Plot axis
+    ctx.strokeStyle = isDark ? '#1a1a4a' : '#e0e0e0';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(plotX, 0);
+    ctx.lineTo(plotX, H);
+    ctx.stroke();
+
+    // === Draw a detector icon on screen ===
+    // Gaussian envelope showing the detector response function
+    const detectorY = midY + d * 0.4; // position the detector off-center to show sampling
+    ctx.strokeStyle = detectorColor;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    for (let dy = -sigma * 4; dy <= sigma * 4; dy++) {
+      const gauss = Math.exp(-dy * dy / (2 * sigma * sigma));
+      const x = screenX + 6 + gauss * 20;
+      const y = detectorY + dy;
+      dy === -sigma * 4 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    // Detector bracket
+    ctx.strokeStyle = detectorColor;
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath();
+    ctx.moveTo(screenX + 6, detectorY - sigma * 2);
+    ctx.lineTo(screenX + 30, detectorY - sigma * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(screenX + 6, detectorY + sigma * 2);
+    ctx.lineTo(screenX + 30, detectorY + sigma * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Sigma label
+    ctx.fillStyle = detectorColor;
+    ctx.font = '10px system-ui';
+    ctx.fillText('σ', screenX + 32, detectorY + 3);
+
+    // Overlap integral annotation
+    ctx.fillStyle = detectorColor;
+    ctx.font = '9px system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText('⟨det|ψ⟩', screenX + 18, detectorY - sigma * 2 - 6);
+    ctx.textAlign = 'left';
+
+    // === Labels ===
+    ctx.fillStyle = mutedColor;
+    ctx.font = '11px system-ui';
+    ctx.fillText('Plane wave', 15, 18);
+    ctx.fillText('ψ = eⁱᵏˣ', 15, 33);
+
+    ctx.textAlign = 'center';
+    ctx.fillText('Barrier', barrierX, H - 8);
+    ctx.fillText('Screen', screenX, H - 8);
+    ctx.fillText('P(y)', plotX + plotW / 2, H - 8);
+    ctx.textAlign = 'left';
+
+    // Slit labels
+    ctx.fillStyle = textColor;
+    ctx.font = '10px system-ui';
+    ctx.fillText('slit 1', barrierX + 10, slit1Y - slitW / 2 - 4);
+    ctx.fillText('slit 2', barrierX + 10, slit2Y + slitW / 2 + 12);
+
+    // d label between slits
+    ctx.strokeStyle = mutedColor;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(barrierX - 20, slit1Y);
+    ctx.lineTo(barrierX - 20, slit2Y);
+    ctx.stroke();
+    // arrowheads
+    ctx.beginPath();
+    ctx.moveTo(barrierX - 23, slit1Y + 5);
+    ctx.lineTo(barrierX - 20, slit1Y);
+    ctx.lineTo(barrierX - 17, slit1Y + 5);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(barrierX - 23, slit2Y - 5);
+    ctx.lineTo(barrierX - 20, slit2Y);
+    ctx.lineTo(barrierX - 17, slit2Y - 5);
+    ctx.stroke();
+    ctx.fillStyle = mutedColor;
+    ctx.font = '10px system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText('d', barrierX - 30, midY + 3);
+    ctx.textAlign = 'left';
+
+    time += 0.016;
+    if (isVisible) requestAnimationFrame(draw);
+  }
+
+  let isVisible = false;
+  const observer = new IntersectionObserver(([entry]) => {
+    const wasVisible = isVisible;
+    isVisible = entry.isIntersecting;
+    if (isVisible && !wasVisible) requestAnimationFrame(draw);
+  }, { threshold: 0.1 });
+  observer.observe(canvas.closest('.diagram-container')!);
+</script>
