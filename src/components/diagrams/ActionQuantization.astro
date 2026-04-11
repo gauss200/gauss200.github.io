@@ -1,0 +1,393 @@
+---
+// Action quantization in phase space.
+// A closed orbit in (x, p) space encloses an area that must be
+// an integer multiple of ħ (Bohr-Sommerfeld quantization).
+// ∮ p dx = nħ
+// Interactive: adjust the quantum number n and potential shape.
+---
+<div class="diagram-container">
+  <div class="diagram-controls">
+    <label>
+      Quantum number (n):
+      <input type="range" id="aq-n" min="1" max="12" step="1" value="3" />
+      <span id="aq-n-val">3</span>
+    </label>
+    <label>
+      Potential:
+      <select id="aq-potential">
+        <option value="harmonic">Harmonic oscillator</option>
+        <option value="box">Particle in a box</option>
+        <option value="quartic">Quartic (x⁴)</option>
+      </select>
+    </label>
+    <label>
+      Show ħ cells:
+      <input type="checkbox" id="aq-cells" checked />
+    </label>
+  </div>
+  <canvas id="action-quantization" width="800" height="520"></canvas>
+</div>
+
+<style>
+  .diagram-container {
+    margin: 2rem 0;
+    padding: 1.5rem;
+    background: var(--color-card-bg);
+    border-radius: var(--border-radius);
+    box-shadow: 0 2px 8px var(--color-card-shadow);
+  }
+  .diagram-controls {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .diagram-controls label {
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .diagram-controls select {
+    font-size: 0.85rem;
+    padding: 0.15rem 0.3rem;
+    border: 1px solid var(--color-border);
+    background: var(--color-bg);
+    color: var(--color-text);
+  }
+  canvas {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: var(--border-radius);
+  }
+</style>
+
+<script>
+  const canvas = document.getElementById('action-quantization') as HTMLCanvasElement;
+  const ctx = canvas.getContext('2d')!;
+  const nSlider = document.getElementById('aq-n') as HTMLInputElement;
+  const nValEl = document.getElementById('aq-n-val')!;
+  const potSelect = document.getElementById('aq-potential') as HTMLSelectElement;
+  const cellsCheck = document.getElementById('aq-cells') as HTMLInputElement;
+
+  let time = 0;
+
+  nSlider.addEventListener('input', () => { nValEl.textContent = nSlider.value; });
+
+  // Phase space orbits for different potentials:
+  //
+  // Harmonic oscillator: H = p²/2m + mω²x²/2
+  //   Orbits are ellipses: x = A cos(θ), p = -mωA sin(θ)
+  //   Area = π A² mω = (n + 1/2)ħ  →  A² ∝ n
+  //
+  // Particle in a box: H = p²/2m, |x| < L
+  //   Orbits are rectangles: p = ±nπħ/L, x ∈ [-L, L]
+  //   Area = 2L × 2p = 4Lp = 2nħ (approximately nħ per half-cycle)
+  //
+  // Quartic: H = p²/2m + αx⁴
+  //   Orbits are rounded "pillow" shapes
+
+  function getOrbitPoints(n: number, potential: string, nPts: number): [number, number][] {
+    const pts: [number, number][] = [];
+
+    if (potential === 'harmonic') {
+      // Ellipse with semi-axes proportional to sqrt(n)
+      const ax = Math.sqrt(n) * 0.85;
+      const ap = Math.sqrt(n) * 0.85;
+      for (let i = 0; i < nPts; i++) {
+        const theta = (i / nPts) * Math.PI * 2;
+        pts.push([ax * Math.cos(theta), ap * Math.sin(theta)]);
+      }
+    } else if (potential === 'box') {
+      // Rectangle with rounded corners
+      const xMax = 0.9;
+      const pMax = n * 0.28;
+      const r = 0.08; // corner radius
+      const segs = Math.floor(nPts / 4);
+      // Top edge (right to left)
+      for (let i = 0; i <= segs; i++) pts.push([xMax - (2 * xMax * i / segs), pMax]);
+      // Left edge (top to bottom)
+      for (let i = 0; i <= segs; i++) pts.push([-xMax, pMax - (2 * pMax * i / segs)]);
+      // Bottom edge (left to right)
+      for (let i = 0; i <= segs; i++) pts.push([-xMax + (2 * xMax * i / segs), -pMax]);
+      // Right edge (bottom to top)
+      for (let i = 0; i <= segs; i++) pts.push([xMax, -pMax + (2 * pMax * i / segs)]);
+    } else {
+      // Quartic: p² + x⁴ = E, E ∝ n^(4/3)
+      const E = Math.pow(n, 4 / 3) * 0.5;
+      for (let i = 0; i < nPts; i++) {
+        const theta = (i / nPts) * Math.PI * 2;
+        // Parametric: x = r(θ)cos(θ), p = r(θ)sin(θ)
+        // For p² + x⁴ = E: r²sin²θ + r⁴cos⁴θ = E
+        // Solve numerically for r at each θ
+        let rLow = 0, rHigh = 4;
+        for (let iter = 0; iter < 30; iter++) {
+          const rMid = (rLow + rHigh) / 2;
+          const val = rMid * rMid * Math.sin(theta) * Math.sin(theta) +
+                      rMid * rMid * rMid * rMid * Math.cos(theta) * Math.cos(theta) * Math.cos(theta) * Math.cos(theta);
+          if (val < E) rLow = rMid; else rHigh = rMid;
+        }
+        const r = (rLow + rHigh) / 2;
+        pts.push([r * Math.cos(theta) * 0.7, r * Math.sin(theta) * 0.7]);
+      }
+    }
+
+    return pts;
+  }
+
+  function computeArea(pts: [number, number][]): number {
+    // Shoelace formula
+    let area = 0;
+    for (let i = 0; i < pts.length; i++) {
+      const j = (i + 1) % pts.length;
+      area += pts[i][0] * pts[j][1] - pts[j][0] * pts[i][1];
+    }
+    return Math.abs(area) / 2;
+  }
+
+  function draw() {
+    const W = canvas.width;
+    const H = canvas.height;
+    const n = parseInt(nSlider.value);
+    const potential = potSelect.value;
+    const showCells = cellsCheck.checked;
+
+    const isDark = document.documentElement.getAttribute('data-theme') === 'ds9';
+
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = isDark ? '#05050f' : '#fafafa';
+    ctx.fillRect(0, 0, W, H);
+
+    const colorOrbit = isDark ? '#e8a640' : '#e63946';
+    const colorFill = isDark ? 'rgba(232,166,64,0.08)' : 'rgba(230,57,70,0.06)';
+    const colorCell = isDark ? 'rgba(51,204,204,0.12)' : 'rgba(42,157,143,0.08)';
+    const colorCellStroke = isDark ? 'rgba(51,204,204,0.25)' : 'rgba(42,157,143,0.2)';
+    const colorParticle = isDark ? '#33cccc' : '#2a9d8f';
+    const colorPrev = isDark ? 'rgba(232,166,64,0.15)' : 'rgba(230,57,70,0.1)';
+    const textColor = isDark ? '#c8cad8' : '#1a1a1a';
+    const mutedColor = isDark ? '#7a7e9a' : '#888';
+    const axisColor = isDark ? '#1a1a4a' : '#e0e0e0';
+
+    // Phase space plot area
+    const margin = { left: 60, right: 200, top: 30, bottom: 50 };
+    const plotW = W - margin.left - margin.right;
+    const plotH = H - margin.top - margin.bottom;
+    const cx = margin.left + plotW / 2;
+    const cy = margin.top + plotH / 2;
+    const scale = Math.min(plotW, plotH) / 2 * 0.85 / Math.max(Math.sqrt(12), 1);
+
+    // Axes
+    ctx.strokeStyle = axisColor;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(margin.left, cy);
+    ctx.lineTo(margin.left + plotW, cy);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx, margin.top);
+    ctx.lineTo(cx, margin.top + plotH);
+    ctx.stroke();
+
+    ctx.fillStyle = textColor;
+    ctx.font = '13px system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText('x', margin.left + plotW + 15, cy + 5);
+    ctx.fillText('p', cx, margin.top - 10);
+    ctx.textAlign = 'left';
+
+    // Draw previous orbits (n-1 down to 1) faintly
+    for (let k = 1; k < n; k++) {
+      const prevPts = getOrbitPoints(k, potential, 200);
+      ctx.beginPath();
+      ctx.strokeStyle = colorPrev;
+      ctx.lineWidth = 1;
+      for (let i = 0; i < prevPts.length; i++) {
+        const x = cx + prevPts[i][0] * scale;
+        const y = cy - prevPts[i][1] * scale;
+        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+      ctx.stroke();
+    }
+
+    // Current orbit
+    const orbitPts = getOrbitPoints(n, potential, 300);
+
+    // Fill area
+    ctx.beginPath();
+    for (let i = 0; i < orbitPts.length; i++) {
+      const x = cx + orbitPts[i][0] * scale;
+      const y = cy - orbitPts[i][1] * scale;
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.fillStyle = colorFill;
+    ctx.fill();
+
+    // ħ cells — tile the enclosed area with small squares representing ħ
+    if (showCells) {
+      const area = computeArea(orbitPts);
+      // Each cell has area = totalArea / n (since total = nħ)
+      const cellArea = area / n;
+      const cellSide = Math.sqrt(cellArea) * scale;
+      const minCellPx = 8;
+      const actualCell = Math.max(cellSide, minCellPx);
+
+      // Grid of cells, only draw those inside the orbit
+      const bounds = { xMin: Infinity, xMax: -Infinity, yMin: Infinity, yMax: -Infinity };
+      for (const pt of orbitPts) {
+        bounds.xMin = Math.min(bounds.xMin, pt[0]);
+        bounds.xMax = Math.max(bounds.xMax, pt[0]);
+        bounds.yMin = Math.min(bounds.yMin, pt[1]);
+        bounds.yMax = Math.max(bounds.yMax, pt[1]);
+      }
+
+      // Point-in-polygon for orbit
+      function insideOrbit(px: number, py: number): boolean {
+        let inside = false;
+        for (let i = 0, j = orbitPts.length - 1; i < orbitPts.length; j = i++) {
+          const xi = orbitPts[i][0], yi = orbitPts[i][1];
+          const xj = orbitPts[j][0], yj = orbitPts[j][1];
+          if ((yi > py) !== (yj > py) && px < (xj - xi) * (py - yi) / (yj - yi) + xi) {
+            inside = !inside;
+          }
+        }
+        return inside;
+      }
+
+      const step = actualCell / scale;
+      let cellCount = 0;
+      for (let gx = bounds.xMin; gx < bounds.xMax; gx += step) {
+        for (let gy = bounds.yMin; gy < bounds.yMax; gy += step) {
+          if (insideOrbit(gx + step / 2, gy + step / 2)) {
+            const px = cx + gx * scale;
+            const py = cy - (gy + step) * scale;
+            ctx.fillStyle = colorCell;
+            ctx.fillRect(px, py, actualCell - 1, actualCell - 1);
+            ctx.strokeStyle = colorCellStroke;
+            ctx.lineWidth = 0.5;
+            ctx.strokeRect(px, py, actualCell - 1, actualCell - 1);
+            cellCount++;
+          }
+        }
+      }
+
+      // ħ label
+      ctx.fillStyle = colorParticle;
+      ctx.font = '10px system-ui';
+      ctx.textAlign = 'center';
+      ctx.fillText(`~${cellCount} cells ≈ ${n}ħ`, cx, margin.top + plotH + 15);
+      ctx.textAlign = 'left';
+    }
+
+    // Draw orbit line
+    ctx.beginPath();
+    ctx.strokeStyle = colorOrbit;
+    ctx.lineWidth = 2.5;
+    for (let i = 0; i < orbitPts.length; i++) {
+      const x = cx + orbitPts[i][0] * scale;
+      const y = cy - orbitPts[i][1] * scale;
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.stroke();
+
+    // Direction arrow on orbit
+    const arrowIdx = Math.floor(orbitPts.length * 0.15);
+    const arrPt = orbitPts[arrowIdx];
+    const arrNext = orbitPts[(arrowIdx + 3) % orbitPts.length];
+    const adx = arrNext[0] - arrPt[0];
+    const ady = arrNext[1] - arrPt[1];
+    const alen = Math.sqrt(adx * adx + ady * ady);
+    if (alen > 0.001) {
+      const aux = adx / alen;
+      const auy = ady / alen;
+      const ax = cx + arrPt[0] * scale;
+      const ay = cy - arrPt[1] * scale;
+      const headSize = 8;
+      ctx.fillStyle = colorOrbit;
+      ctx.beginPath();
+      ctx.moveTo(ax + aux * scale * 0.02, ay - auy * scale * 0.02);
+      ctx.lineTo(ax - aux * headSize + auy * headSize * 0.5, ay + auy * headSize + aux * headSize * 0.5);
+      ctx.lineTo(ax - aux * headSize - auy * headSize * 0.5, ay + auy * headSize - aux * headSize * 0.5);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // Animated particle on orbit
+    const particleIdx = Math.floor((time * 30) % orbitPts.length);
+    const particlePt = orbitPts[particleIdx];
+    ctx.beginPath();
+    ctx.fillStyle = colorParticle;
+    ctx.arc(cx + particlePt[0] * scale, cy - particlePt[1] * scale, 5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // === Right panel: info ===
+    const infoX = W - margin.right + 20;
+    const infoY = margin.top + 20;
+
+    ctx.fillStyle = textColor;
+    ctx.font = '13px system-ui';
+    ctx.fillText('Bohr-Sommerfeld', infoX, infoY);
+    ctx.fillText('Quantization', infoX, infoY + 18);
+
+    ctx.fillStyle = mutedColor;
+    ctx.font = '12px system-ui';
+    ctx.fillText('∮ p dx = nħ', infoX, infoY + 48);
+
+    ctx.fillStyle = colorOrbit;
+    ctx.font = '16px system-ui';
+    ctx.fillText(`n = ${n}`, infoX, infoY + 80);
+
+    const area = computeArea(orbitPts);
+    ctx.fillStyle = mutedColor;
+    ctx.font = '11px system-ui';
+    ctx.fillText(`Area = ${area.toFixed(2)}`, infoX, infoY + 105);
+    ctx.fillText(`= ${n}ħ`, infoX, infoY + 122);
+
+    // Draw energy levels
+    ctx.fillStyle = textColor;
+    ctx.font = '11px system-ui';
+    ctx.fillText('Energy levels:', infoX, infoY + 155);
+
+    for (let k = 1; k <= Math.min(n + 2, 12); k++) {
+      const ly = infoY + 170 + (k - 1) * 18;
+      if (ly > H - 30) break;
+
+      const isActive = k === n;
+      ctx.strokeStyle = isActive ? colorOrbit : (isDark ? '#2a2d4a' : '#ddd');
+      ctx.lineWidth = isActive ? 2.5 : 1;
+      ctx.beginPath();
+      ctx.moveTo(infoX, ly);
+      ctx.lineTo(infoX + 80, ly);
+      ctx.stroke();
+
+      ctx.fillStyle = isActive ? colorOrbit : mutedColor;
+      ctx.font = isActive ? 'bold 10px system-ui' : '10px system-ui';
+      ctx.fillText(`n=${k}`, infoX + 85, ly + 4);
+    }
+
+    // Potential label
+    ctx.fillStyle = mutedColor;
+    ctx.font = '10px system-ui';
+    const potLabels: Record<string, string> = {
+      harmonic: 'V(x) = ½mω²x²',
+      box: 'V(x) = 0, |x|<L',
+      quartic: 'V(x) = αx⁴',
+    };
+    ctx.fillText(potLabels[potential], infoX, infoY + 140);
+
+    time += 0.016;
+    if (isVisible) requestAnimationFrame(draw);
+  }
+
+  let isVisible = false;
+  const observer = new IntersectionObserver(([entry]) => {
+    const wasVisible = isVisible;
+    isVisible = entry.isIntersecting;
+    if (isVisible && !wasVisible) requestAnimationFrame(draw);
+  }, { threshold: 0.1 });
+  observer.observe(canvas.closest('.diagram-container')!);
+</script>
