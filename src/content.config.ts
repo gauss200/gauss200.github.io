@@ -60,4 +60,13 @@ const pages = defineCollection({
   }),
 });
 
-export const collections = { publications, patents, projects, hobbies, pages };
+const diagram_sections = defineCollection({
+  loader: glob({ pattern: '**/*.md', base: './src/content/diagram_sections' }),
+  schema: z.object({
+    title: z.string(),
+    diagram: z.string(),
+    order: z.number().default(0),
+  }),
+});
+
+export const collections = { publications, patents, projects, hobbies, pages, diagram_sections };

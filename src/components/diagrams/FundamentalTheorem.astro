@@ -4,13 +4,6 @@
 // Right: Stokes' theorem — squares with tangential arrows, interior cancels, boundary circulation remains.
 ---
 <div class="diagram-container">
-  <h3>The Fundamental Theorem of Calculus — Pictorial</h3>
-  <p class="diagram-desc">
-    Left: each cell's outward-pointing arrows represent the divergence (&nabla;&middot;F).
-    Adjacent cells share edges, so interior arrows cancel in pairs — only the boundary flux survives.
-    Right: each cell's edge-tangential arrows represent the curl (&nabla;&times;F).
-    Interior tangential arrows cancel between neighbors — only the boundary circulation survives.
-  </p>
   <canvas id="fund-theorem" width="900" height="500"></canvas>
 </div>
 
@@ -21,11 +14,6 @@
     background: var(--color-card-bg);
     border-radius: var(--border-radius);
     box-shadow: 0 2px 8px var(--color-card-shadow);
-  }
-  .diagram-desc {
-    color: var(--color-text-muted);
-    font-size: 0.9rem;
-    margin-bottom: 1rem;
   }
   canvas {
     width: 100%;

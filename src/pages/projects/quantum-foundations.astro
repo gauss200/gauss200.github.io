@@ -1,5 +1,8 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getCollection, getEntry, render } from 'astro:content';
+
+// Import all diagram components
 import CoupledWaveguides from '../../components/diagrams/CoupledWaveguides.astro';
 import CoPropagatingModes from '../../components/diagrams/CoPropagatingModes.astro';
 import CounterPropagating from '../../components/diagrams/CounterPropagating.astro';
@@ -10,124 +13,50 @@ import ContinuumDecay from '../../components/diagrams/ContinuumDecay.astro';
 import EPRExperiment from '../../components/diagrams/EPRExperiment.astro';
 import TwoModeCoupler from '../../components/diagrams/TwoModeCoupler.astro';
 import FundamentalTheorem from '../../components/diagrams/FundamentalTheorem.astro';
+
+// Map diagram names to components
+const diagramMap: Record<string, any> = {
+  CoupledWaveguides,
+  CoPropagatingModes,
+  CounterPropagating,
+  QuantumTunneling,
+  QuantumMeasurement,
+  PeriodicCoupledModes,
+  ContinuumDecay,
+  EPRExperiment,
+  TwoModeCoupler,
+  FundamentalTheorem,
+};
+
+// Get page intro from the projects collection
+const project = await getEntry('projects', 'quantum-foundations');
+const { Content: PageIntro } = await render(project!);
+
+// Get diagram sections sorted by order
+const sections = (await getCollection('diagram_sections')).sort((a, b) => a.data.order - b.data.order);
 ---
 <BaseLayout title="Foundations of Quantum Mechanics">
   <section class="page-header">
-    <h1>Foundations of Quantum Mechanics</h1>
-    <p class="page-intro">
-      Coupled mode theory (CMT) and quantum two-level systems share identical mathematical
-      structure. A forward wave coupling to a backward wave in a waveguide obeys the same
-      equations as a quantum particle tunneling through a barrier. Explore the connections
-      through these interactive visualizations.
-    </p>
+    <h1>{project!.data.title}</h1>
+    <div class="page-intro">
+      <PageIntro />
+    </div>
   </section>
 
   <section class="diagram-grid">
-    <div class="diagram-intro">
-      <h2>Two Coupled Modes — Fields & Envelopes</h2>
-      <p>
-        The fundamental coupled mode system: two modes with propagation constant &beta;,
-        coupling &kappa;, and mismatch &Delta;&beta;. Set the initial amplitudes and
-        watch the carrier fields propagate while the envelopes show energy exchange.
-        With &Delta;&beta; = 0 and A₂(0) = 0, all energy transfers to mode 2 at the
-        beat length &pi;/2&kappa;.
-      </p>
-    </div>
-    <TwoModeCoupler />
-
-    <div class="diagram-intro">
-      <h2>Co-Propagating Coupled Modes</h2>
-      <p>
-        When two waveguides are brought close together, their evanescent fields overlap
-        and energy transfers periodically between them. The coupling coefficient &kappa;
-        and detuning &Delta;&beta; control the transfer efficiency and beat length.
-      </p>
-    </div>
-    <CoPropagatingModes />
-    <CoupledWaveguides />
-
-    <div class="diagram-intro">
-      <h2>Counter-Propagating Waves</h2>
-      <p>
-        In structures like Bragg gratings, a forward-traveling wave couples to a
-        backward-traveling wave through periodic evanescent interaction. At resonance,
-        the structure acts as a near-perfect mirror.
-      </p>
-    </div>
-    <CounterPropagating />
-
-    <div class="diagram-intro">
-      <h2>Quantum Tunneling &harr; Evanescent Coupling</h2>
-      <p>
-        A quantum particle tunneling through a classically forbidden potential barrier
-        is the same physics as evanescent coupling bridging the gap between waveguides.
-        Both involve exponentially decaying fields in the forbidden region.
-      </p>
-    </div>
-    <QuantumTunneling />
-
-    <div class="diagram-intro">
-      <h2>Quantum Measurement as Coupled Modes</h2>
-      <p>
-        In the coupled mode theory of measurement, a system waveguide carrying |&psi;⟩
-        is coupled to an initially empty measurement waveguide through an interaction
-        operator A. As the modes co-propagate through the interaction region, amplitude
-        builds up in the measurement channel. The coupling strength &kappa; and interaction
-        length L determine whether this is a weak measurement (minimal back-action) or
-        a strong projective measurement (significant state transfer).
-      </p>
-    </div>
-    <QuantumMeasurement />
-
-    <div class="diagram-intro">
-      <h2>Periodic Boundary Conditions — Eigenvalue Quantization</h2>
-      <p>
-        Two waveguides coupled by a matrix A with the constraint that the initial
-        state equals the final state: &psi;(0) = &psi;(L). This periodic boundary
-        condition quantizes the allowed propagation constants. Only eigenmodes whose
-        phase accumulation over L is a multiple of 2&pi; form self-consistent
-        standing patterns. Switch between symmetric, antisymmetric, and superposition
-        modes to see how the boundary condition constrains the system.
-      </p>
-    </div>
-    <PeriodicCoupledModes />
-
-    <div class="diagram-intro">
-      <h2>Coupling to a Continuum — Irreversible Decay</h2>
-      <p>
-        A system waveguide couples to N bath modes with random phase offsets.
-        With few modes, energy oscillates back and forth (Poincar&eacute; recurrence).
-        Increase N toward a continuum and the recurrence time diverges — the system
-        amplitude decays exponentially, recovering Fermi's golden rule. This is the
-        coupled-mode-theory origin of irreversibility in quantum mechanics.
-      </p>
-    </div>
-    <ContinuumDecay />
-
-    <div class="diagram-intro">
-      <h2>EPR Experiment — Entangled Spin Correlations</h2>
-      <p>
-        Two spin-½ particles created in a singlet state diverge along spacelike-separated
-        worldlines. A spin-up measurement on particle A along axis &theta; instantaneously
-        constrains the statistics of particle B. The conditional probability
-        P(&uarr;) = sin²((&phi; &minus; &theta;)/2) shows perfect anti-correlation when
-        &phi; = &theta; and no correlation when &phi; &perp; &theta; — the signature
-        of quantum entanglement that violates Bell's inequality.
-      </p>
-    </div>
-    <EPRExperiment />
-
-    <div class="diagram-intro">
-      <h2>Fundamental Theorem of Calculus — Pictorial</h2>
-      <p>
-        The divergence theorem and Stokes' theorem both arise from the same principle:
-        summing a derivative over a volume reduces to an integral over the boundary
-        because interior contributions cancel between adjacent cells. Left: normal
-        (divergence) arrows cancel, leaving boundary flux. Right: tangential (curl)
-        arrows cancel, leaving boundary circulation.
-      </p>
-    </div>
-    <FundamentalTheorem />
+    {sections.map(async (section) => {
+      const { Content } = await render(section);
+      const DiagramComponent = diagramMap[section.data.diagram];
+      return (
+        <div>
+          <div class="diagram-intro">
+            <h2>{section.data.title}</h2>
+            <div class="diagram-desc-body"><Content /></div>
+          </div>
+          {DiagramComponent && <DiagramComponent />}
+        </div>
+      );
+    })}
   </section>
 </BaseLayout>
 
@@ -147,6 +76,10 @@ import FundamentalTheorem from '../../components/diagrams/FundamentalTheorem.ast
     max-width: 720px;
   }
 
+  .page-intro :global(p) {
+    margin-bottom: 0.75rem;
+  }
+
   .diagram-grid {
     padding: 1rem 0 2rem;
   }
@@ -160,20 +93,14 @@ import FundamentalTheorem from '../../components/diagrams/FundamentalTheorem.ast
     margin-bottom: 0.5rem;
   }
 
-  .diagram-intro p {
+  .diagram-desc-body {
     color: var(--color-text-muted);
     font-size: 0.95rem;
     line-height: 1.6;
     max-width: 680px;
   }
 
-  .static-figure {
-    margin: 1.25rem 0;
-    border: 1px solid var(--color-border);
-  }
-
-  .static-figure img {
-    width: 100%;
-    display: block;
+  .diagram-desc-body :global(p) {
+    margin-bottom: 0.5rem;
   }
 </style>

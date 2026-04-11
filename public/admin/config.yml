@@ -64,6 +64,17 @@ collections:
       - { label: Image, name: image, widget: image, required: false }
       - { label: Body, name: body, widget: markdown }
 
+  - name: diagram_sections
+    label: "Diagram Sections (Quantum Foundations)"
+    folder: src/content/diagram_sections
+    create: true
+    slug: "{{slug}}"
+    fields:
+      - { label: Title, name: title, widget: string }
+      - { label: Diagram, name: diagram, widget: select, options: ["TwoModeCoupler", "CoPropagatingModes", "CoupledWaveguides", "CounterPropagating", "QuantumTunneling", "QuantumMeasurement", "PeriodicCoupledModes", "ContinuumDecay", "EPRExperiment", "FundamentalTheorem"] }
+      - { label: Display Order, name: order, widget: number, value_type: int, default: 0 }
+      - { label: Body, name: body, widget: markdown }
+
   - name: hobbies
     label: Hobbies
     folder: src/content/hobbies
