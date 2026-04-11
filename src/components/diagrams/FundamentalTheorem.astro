@@ -1,0 +1,367 @@
+---
+// Fundamental theorem of calculus illustrated pictorially.
+// Left: divergence theorem — squares with normal arrows, interior cancels, boundary flux remains.
+// Right: Stokes' theorem — squares with tangential arrows, interior cancels, boundary circulation remains.
+---
+<div class="diagram-container">
+  <h3>The Fundamental Theorem of Calculus — Pictorial</h3>
+  <p class="diagram-desc">
+    Left: each cell's outward-pointing arrows represent the divergence (&nabla;&middot;F).
+    Adjacent cells share edges, so interior arrows cancel in pairs — only the boundary flux survives.
+    Right: each cell's edge-tangential arrows represent the curl (&nabla;&times;F).
+    Interior tangential arrows cancel between neighbors — only the boundary circulation survives.
+  </p>
+  <canvas id="fund-theorem" width="900" height="500"></canvas>
+</div>
+
+<style>
+  .diagram-container {
+    margin: 2rem 0;
+    padding: 1.5rem;
+    background: var(--color-card-bg);
+    border-radius: var(--border-radius);
+    box-shadow: 0 2px 8px var(--color-card-shadow);
+  }
+  .diagram-desc {
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+  }
+  canvas {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: var(--border-radius);
+  }
+</style>
+
+<script>
+  const canvas = document.getElementById('fund-theorem') as HTMLCanvasElement;
+  const ctx = canvas.getContext('2d')!;
+
+  function drawFigure() {
+    const W = canvas.width;
+    const H = canvas.height;
+
+    const isDark = document.documentElement.getAttribute('data-theme') === 'ds9';
+
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = isDark ? '#05050f' : '#fafafa';
+    ctx.fillRect(0, 0, W, H);
+
+    const colorArrow = isDark ? '#e8a640' : '#e63946';
+    const colorCancel = isDark ? 'rgba(232,166,64,0.12)' : 'rgba(230,57,70,0.12)';
+    const colorBoundary = isDark ? '#33cccc' : '#2a9d8f';
+    const colorCell = isDark ? 'rgba(100,181,246,0.06)' : 'rgba(69,123,157,0.04)';
+    const colorCellStroke = isDark ? 'rgba(100,181,246,0.15)' : 'rgba(69,123,157,0.12)';
+    const colorCurve = isDark ? '#cc99ff' : '#7c3aed';
+    const textColor = isDark ? '#c8cad8' : '#1a1a1a';
+    const mutedColor = isDark ? '#7a7e9a' : '#888';
+
+    const panelW = W / 2 - 20;
+    const panelH = H - 60;
+
+    // Irregular blob path (used for both panels)
+    // Centered at (cx, cy) with approximate radius r
+    function blobPath(cx: number, cy: number, r: number): [number, number][] {
+      const pts: [number, number][] = [];
+      const n = 60;
+      for (let i = 0; i < n; i++) {
+        const angle = (i / n) * Math.PI * 2;
+        const noise = 1 + 0.15 * Math.sin(angle * 3 + 1.2) + 0.1 * Math.cos(angle * 5 - 0.8) + 0.08 * Math.sin(angle * 7 + 2.5);
+        pts.push([cx + r * noise * Math.cos(angle), cy + r * noise * Math.sin(angle)]);
+      }
+      return pts;
+    }
+
+    function drawBlobOutline(pts: [number, number][], color: string, lineWidth: number) {
+      ctx.strokeStyle = color;
+      ctx.lineWidth = lineWidth;
+      ctx.beginPath();
+      ctx.moveTo(pts[0][0], pts[0][1]);
+      for (let i = 1; i < pts.length; i++) {
+        ctx.lineTo(pts[i][0], pts[i][1]);
+      }
+      ctx.closePath();
+      ctx.stroke();
+    }
+
+    function isInsideBlob(px: number, py: number, pts: [number, number][]): boolean {
+      // Ray casting
+      let inside = false;
+      for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+        const xi = pts[i][0], yi = pts[i][1];
+        const xj = pts[j][0], yj = pts[j][1];
+        if ((yi > py) !== (yj > py) && px < (xj - xi) * (py - yi) / (yj - yi) + xi) {
+          inside = !inside;
+        }
+      }
+      return inside;
+    }
+
+    function drawArrow(x1: number, y1: number, x2: number, y2: number, color: string, width: number, headSize: number) {
+      const dx = x2 - x1;
+      const dy = y2 - y1;
+      const len = Math.sqrt(dx * dx + dy * dy);
+      if (len < 1) return;
+      const ux = dx / len;
+      const uy = dy / len;
+
+      ctx.strokeStyle = color;
+      ctx.lineWidth = width;
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2 - ux * headSize * 0.5, y2 - uy * headSize * 0.5);
+      ctx.stroke();
+
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.moveTo(x2, y2);
+      ctx.lineTo(x2 - ux * headSize - uy * headSize * 0.35, y2 - uy * headSize + ux * headSize * 0.35);
+      ctx.lineTo(x2 - ux * headSize + uy * headSize * 0.35, y2 - uy * headSize - ux * headSize * 0.35);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    const cellSize = 32;
+    const arrowInset = 5;
+    const arrowHead = 4;
+
+    // ============ LEFT PANEL: Divergence Theorem ============
+    const lcx = panelW / 2 + 10;
+    const lcy = panelH / 2 + 30;
+    const lr = Math.min(panelW, panelH) * 0.38;
+    const leftBlob = blobPath(lcx, lcy, lr);
+
+    // Grid of cells
+    const lGridX0 = lcx - lr - cellSize;
+    const lGridY0 = lcy - lr - cellSize;
+    const lGridX1 = lcx + lr + cellSize;
+    const lGridY1 = lcy + lr + cellSize;
+
+    // Collect cells inside blob
+    type Cell = { x: number; y: number; interior: boolean };
+    const leftCells: Cell[] = [];
+
+    for (let gx = lGridX0; gx < lGridX1; gx += cellSize) {
+      for (let gy = lGridY0; gy < lGridY1; gy += cellSize) {
+        const cx = gx + cellSize / 2;
+        const cy = gy + cellSize / 2;
+        if (isInsideBlob(cx, cy, leftBlob)) {
+          // Check if all 4 corners are inside (fully interior) vs on boundary
+          const allInside = isInsideBlob(gx, gy, leftBlob) &&
+            isInsideBlob(gx + cellSize, gy, leftBlob) &&
+            isInsideBlob(gx, gy + cellSize, leftBlob) &&
+            isInsideBlob(gx + cellSize, gy + cellSize, leftBlob);
+
+          // Check if all neighbors exist (to determine if arrows cancel)
+          const hasRight = isInsideBlob(cx + cellSize, cy, leftBlob);
+          const hasLeft = isInsideBlob(cx - cellSize, cy, leftBlob);
+          const hasTop = isInsideBlob(cx, cy - cellSize, leftBlob);
+          const hasBottom = isInsideBlob(cx, cy + cellSize, leftBlob);
+
+          leftCells.push({ x: gx, y: gy, interior: hasRight && hasLeft && hasTop && hasBottom });
+        }
+      }
+    }
+
+    // Draw cells and arrows
+    for (const cell of leftCells) {
+      const { x, y, interior } = cell;
+
+      // Cell background
+      ctx.fillStyle = cellCell;
+      ctx.strokeStyle = colorCellStroke;
+      ctx.lineWidth = 0.5;
+      ctx.fillRect(x, y, cellSize, cellSize);
+      ctx.strokeRect(x, y, cellSize, cellSize);
+
+      const cx = x + cellSize / 2;
+      const cy = y + cellSize / 2;
+      const ai = arrowInset;
+      const halfArrow = cellSize / 2 - ai;
+
+      if (interior) {
+        // Interior: draw dim cancelled arrows
+        // Right arrow
+        drawArrow(cx, cy, cx + halfArrow, cy, colorCancel, 0.8, 3);
+        // Left arrow
+        drawArrow(cx, cy, cx - halfArrow, cy, colorCancel, 0.8, 3);
+        // Up arrow
+        drawArrow(cx, cy, cx, cy - halfArrow, colorCancel, 0.8, 3);
+        // Down arrow
+        drawArrow(cx, cy, cx, cy + halfArrow, colorCancel, 0.8, 3);
+      } else {
+        // Boundary cell: check which edges are on boundary
+        const hasRight = isInsideBlob(cx + cellSize, cy, leftBlob);
+        const hasLeft = isInsideBlob(cx - cellSize, cy, leftBlob);
+        const hasTop = isInsideBlob(cx, cy - cellSize, leftBlob);
+        const hasBottom = isInsideBlob(cx, cy + cellSize, leftBlob);
+
+        // Draw cancelled interior arrows dim
+        if (hasRight) drawArrow(cx, cy, cx + halfArrow, cy, colorCancel, 0.8, 3);
+        if (hasLeft) drawArrow(cx, cy, cx - halfArrow, cy, colorCancel, 0.8, 3);
+        if (hasTop) drawArrow(cx, cy, cx, cy - halfArrow, colorCancel, 0.8, 3);
+        if (hasBottom) drawArrow(cx, cy, cx, cy + halfArrow, colorCancel, 0.8, 3);
+
+        // Draw surviving boundary arrows bold
+        if (!hasRight) drawArrow(cx, cy, cx + halfArrow, cy, colorBoundary, 1.8, arrowHead);
+        if (!hasLeft) drawArrow(cx, cy, cx - halfArrow, cy, colorBoundary, 1.8, arrowHead);
+        if (!hasTop) drawArrow(cx, cy, cx, cy - halfArrow, colorBoundary, 1.8, arrowHead);
+        if (!hasBottom) drawArrow(cx, cy, cx, cy + halfArrow, colorBoundary, 1.8, arrowHead);
+      }
+    }
+
+    // Blob outline
+    drawBlobOutline(leftBlob, colorCurve, 2);
+
+    // Title
+    ctx.fillStyle = textColor;
+    ctx.font = '13px system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText('Divergence Theorem', lcx, 22);
+    ctx.font = '11px system-ui';
+    ctx.fillStyle = mutedColor;
+    ctx.fillText('∫∫ ∇·F dA  =  ∮ F·n̂ ds', lcx, 40);
+    ctx.textAlign = 'left';
+
+    // Legend left
+    ctx.fillStyle = mutedColor;
+    ctx.font = '10px system-ui';
+    drawArrow(20, H - 30, 40, H - 30, colorCancel, 1.5, 4);
+    ctx.fillText('cancelled (interior)', 45, H - 26);
+    drawArrow(20, H - 14, 40, H - 14, colorBoundary, 1.8, 4);
+    ctx.fillText('survives (boundary flux)', 45, H - 10);
+
+    // ============ RIGHT PANEL: Stokes' / Curl Theorem ============
+    const rcx = W / 2 + panelW / 2 + 10;
+    const rcy = lcy;
+    const rr = lr;
+    const rightBlob = blobPath(rcx, rcy, rr);
+
+    const rGridX0 = rcx - rr - cellSize;
+    const rGridY0 = rcy - rr - cellSize;
+    const rGridX1 = rcx + rr + cellSize;
+    const rGridY1 = rcy + rr + cellSize;
+
+    const rightCells: Cell[] = [];
+    for (let gx = rGridX0; gx < rGridX1; gx += cellSize) {
+      for (let gy = rGridY0; gy < rGridY1; gy += cellSize) {
+        const cx = gx + cellSize / 2;
+        const cy = gy + cellSize / 2;
+        if (isInsideBlob(cx, cy, rightBlob)) {
+          const hasRight = isInsideBlob(cx + cellSize, cy, rightBlob);
+          const hasLeft = isInsideBlob(cx - cellSize, cy, rightBlob);
+          const hasTop = isInsideBlob(cx, cy - cellSize, rightBlob);
+          const hasBottom = isInsideBlob(cx, cy + cellSize, rightBlob);
+          rightCells.push({ x: gx, y: gy, interior: hasRight && hasLeft && hasTop && hasBottom });
+        }
+      }
+    }
+
+    // For curl/Stokes: arrows go tangential around each cell (CCW circulation)
+    for (const cell of rightCells) {
+      const { x, y, interior } = cell;
+
+      ctx.fillStyle = colorCell;
+      ctx.strokeStyle = colorCellStroke;
+      ctx.lineWidth = 0.5;
+      ctx.fillRect(x, y, cellSize, cellSize);
+      ctx.strokeRect(x, y, cellSize, cellSize);
+
+      const ai = arrowInset;
+      const cx = x + cellSize / 2;
+      const cy = y + cellSize / 2;
+
+      const hasRight = isInsideBlob(cx + cellSize, cy, rightBlob);
+      const hasLeft = isInsideBlob(cx - cellSize, cy, rightBlob);
+      const hasTop = isInsideBlob(cx, cy - cellSize, rightBlob);
+      const hasBottom = isInsideBlob(cx, cy + cellSize, rightBlob);
+
+      // CCW tangential arrows on each edge:
+      // Top edge: left to right
+      // Right edge: top to bottom
+      // Bottom edge: right to left
+      // Left edge: bottom to top
+
+      if (interior) {
+        // All interior arrows cancel — draw dim
+        // Top edge →
+        drawArrow(x + ai, y + ai, x + cellSize - ai, y + ai, colorCancel, 0.8, 3);
+        // Right edge ↓
+        drawArrow(x + cellSize - ai, y + ai, x + cellSize - ai, y + cellSize - ai, colorCancel, 0.8, 3);
+        // Bottom edge ←
+        drawArrow(x + cellSize - ai, y + cellSize - ai, x + ai, y + cellSize - ai, colorCancel, 0.8, 3);
+        // Left edge ↑
+        drawArrow(x + ai, y + cellSize - ai, x + ai, y + ai, colorCancel, 0.8, 3);
+      } else {
+        // Top edge: shared with top neighbor?
+        const topColor = hasTop ? colorCancel : colorBoundary;
+        const topW = hasTop ? 0.8 : 1.8;
+        const topH = hasTop ? 3 : arrowHead;
+        drawArrow(x + ai, y + ai, x + cellSize - ai, y + ai, topColor, topW, topH);
+
+        // Right edge: shared with right neighbor?
+        const rightColor = hasRight ? colorCancel : colorBoundary;
+        const rightWid = hasRight ? 0.8 : 1.8;
+        const rightH = hasRight ? 3 : arrowHead;
+        drawArrow(x + cellSize - ai, y + ai, x + cellSize - ai, y + cellSize - ai, rightColor, rightWid, rightH);
+
+        // Bottom edge: shared with bottom neighbor?
+        const bottomColor = hasBottom ? colorCancel : colorBoundary;
+        const bottomW = hasBottom ? 0.8 : 1.8;
+        const bottomH = hasBottom ? 3 : arrowHead;
+        drawArrow(x + cellSize - ai, y + cellSize - ai, x + ai, y + cellSize - ai, bottomColor, bottomW, bottomH);
+
+        // Left edge: shared with left neighbor?
+        const leftColor = hasLeft ? colorCancel : colorBoundary;
+        const leftW = hasLeft ? 0.8 : 1.8;
+        const leftH = hasLeft ? 3 : arrowHead;
+        drawArrow(x + ai, y + cellSize - ai, x + ai, y + ai, leftColor, leftW, leftH);
+      }
+    }
+
+    drawBlobOutline(rightBlob, colorCurve, 2);
+
+    // Title
+    ctx.fillStyle = textColor;
+    ctx.font = '13px system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText('Stokes\' Theorem (Curl)', rcx, 22);
+    ctx.font = '11px system-ui';
+    ctx.fillStyle = mutedColor;
+    ctx.fillText('∫∫ (∇×F)·n̂ dA  =  ∮ F·dr', rcx, 40);
+    ctx.textAlign = 'left';
+
+    // Legend right
+    const rlx = W / 2 + 20;
+    ctx.fillStyle = mutedColor;
+    ctx.font = '10px system-ui';
+    drawArrow(rlx, H - 30, rlx + 20, H - 30, colorCancel, 1.5, 4);
+    ctx.fillText('cancelled (shared interior edge)', rlx + 25, H - 26);
+    drawArrow(rlx, H - 14, rlx + 20, H - 14, colorBoundary, 1.8, 4);
+    ctx.fillText('survives (boundary circulation)', rlx + 25, H - 10);
+
+    // Divider
+    ctx.strokeStyle = isDark ? '#1a1a4a' : '#e0e0e0';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(W / 2, 50);
+    ctx.lineTo(W / 2, H - 45);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // Fix: cellCell should be colorCell
+  const cellCell = (() => {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'ds9';
+    return isDark ? 'rgba(100,181,246,0.06)' : 'rgba(69,123,157,0.04)';
+  })();
+
+  drawFigure();
+
+  // Redraw on theme change
+  const observer = new MutationObserver(drawFigure);
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+</script>
