@@ -33,7 +33,7 @@ const projects = defineCollection({
     title: z.string(),
     status: z.enum(['active', 'completed']),
     year_start: z.number(),
-    year_end: z.union([z.number(), z.string()]).optional(),
+    year_end: z.union([z.number(), z.string(), z.null()]).optional(),
     summary: z.string(),
     order: z.number().default(0),
     image: z.string().optional(),
