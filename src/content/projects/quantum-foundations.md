@@ -2,7 +2,7 @@
 title: Foundations of Quantum Mechanics
 status: active
 year_start: 2024
-year_end: 2026
+year_end: null
 summary: Interactive visualizations exploring coupled mode theory, Rabi oscillations, quantum tunneling, and the Bloch sphere.
 order: 1
 image: /images/projects/quantum-foundations.svg
