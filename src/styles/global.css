@@ -49,10 +49,16 @@ a:hover {
   border-bottom: 1px solid var(--color-border);
 }
 
-/* Responsive diagram containers */
+/* Responsive diagram containers — break out of .container width */
 .diagram-container {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+  width: 100vw;
+  position: relative;
+  left: 50%;
+  transform: translateX(-50%);
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
 }
 
 .diagram-controls {
