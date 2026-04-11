@@ -58,7 +58,7 @@ collections:
       - { label: Title, name: title, widget: string }
       - { label: Status, name: status, widget: select, options: ["active", "completed"] }
       - { label: Start Year, name: year_start, widget: number, value_type: int }
-      - { label: End Year, name: year_end, widget: number, value_type: int, required: false }
+      - { label: End Year, name: year_end, widget: string, required: false }
       - { label: Summary, name: summary, widget: text }
       - { label: Display Order, name: order, widget: number, value_type: int, default: 0 }
       - { label: Image, name: image, widget: image, required: false }
