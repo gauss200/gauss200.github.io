@@ -87,6 +87,7 @@ collections:
           - { label: "Fundamental Theorem of Calculus", value: "FundamentalTheorem" }
           - { label: "Action Quantization in Phase Space", value: "ActionQuantization" }
           - { label: "Double Slit — Measurement as Overlap Integral", value: "DoubleSlit" }
+          - { label: "Retrocausal Self-Consistency Loop", value: "RetrocausalLoop" }
       - { label: Display Order, name: order, widget: number, value_type: int, default: 0 }
       - { label: Body, name: body, widget: markdown }
 
