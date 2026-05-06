@@ -3,7 +3,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import { getCollection, render } from 'astro:content';
 
 export async function getStaticPaths() {
-  const projects = await getCollection('projects');
+  const projects = await getCollection('essays');
   return projects
     .filter((p) => p.id !== 'quantum-foundations')
     .map((project) => ({

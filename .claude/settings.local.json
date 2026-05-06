@@ -1,0 +1,33 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:4321/about)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:4321/)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:4321/contact)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"http://localhost:4321/projects/constrained-optimization\")",
+      "Bash(node -e \" const { createServer } = require\\('vite'\\); \")",
+      "Bash(node -e \"const d=require\\('fs'\\).readFileSync\\('/dev/stdin','utf8'\\); const j=JSON.parse\\(d\\); const projects=Object.keys\\(j\\).filter\\(k=>k.includes\\('projects'\\)\\); console.log\\(projects.slice\\(0,5\\)\\);\")",
+      "Bash(curl -s \"http://localhost:4321/projects/constrained-optimization\" -o /dev/null -w \"%{http_code}\\\\n\")",
+      "Bash(curl -s \"http://localhost:4321/projects/econophysics\" -o /dev/null -w \"%{http_code}\\\\n\")",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); [print\\(k\\) for k in d.keys\\(\\) if 'project' in k.lower\\(\\)]\")",
+      "Bash(python3 -c ':*)",
+      "Bash(node -e \"const d=require\\('c:/Users/gauss/Code/gauss200.github.io/.astro/data-store.json'\\); Object.keys\\(d\\).filter\\(k=>k.includes\\('project'\\)\\).forEach\\(k=>{console.log\\(k\\); const v=d[k]; if\\(v&&v.entries\\) Object.keys\\(v.entries\\).slice\\(0,5\\).forEach\\(id=>console.log\\(' -',id\\)\\)}\\)\")",
+      "Bash(node -e ':*)",
+      "Bash(npx kill-port:*)",
+      "Bash(npm run:*)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:4321/essays/quantum-foundations)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:4321/essays/constrained-optimization)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:4321/projects/quantum-foundations)",
+      "Bash(curl -s http://localhost:4321/essays/quantum-foundations)",
+      "Bash(netstat -ano)",
+      "Bash(taskkill //F //PID 258652)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://127.0.0.1:4321/)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:4321/admin/)",
+      "Bash(curl -s -L -o /dev/null -w \"%{http_code}\" http://localhost:4321/admin/)",
+      "Bash(rm \"c:\\\\Users\\\\gauss\\\\Code\\\\gauss200.github.io\\\\src\\\\pages\\\\essays\\\\[slug].astro\")"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\gauss\\Code\\gauss200.github.io\\src\\pages\\essays"
+    ]
+  }
+}

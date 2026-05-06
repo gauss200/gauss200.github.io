@@ -4,7 +4,7 @@ status: active
 year_start: 2024
 summary: "Exploring the deep mathematical parallels between physical systems and economic phenomena — from statistical mechanics of markets to thermodynamic models of wealth distribution."
 order: 2
-image: "/images/projects/econophysics.svg"
+figure: "/essays/econophysics/figure.svg"
 ---
 
 Econophysics applies the tools and concepts of physics to economic and financial systems. Just as coupled mode theory reveals energy transfer between waveguides, analogous mathematical structures appear in the coupling between economic agents, market sectors, and financial instruments.

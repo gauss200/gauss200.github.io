@@ -1,0 +1,390 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+
+const essays = (await getCollection('essays'))
+  .filter(e => !e.id.startsWith('test'))
+  .sort((a, b) => (a.data.order ?? 99) - (b.data.order ?? 99));
+---
+<BaseLayout title="Admin — Manage Essays">
+  <section class="admin-header">
+    <h1>Essay Administration</h1>
+    <p class="admin-intro">Add a new essay or review existing ones. Fill out the form, then download the generated file and save it to <code>src/content/essays/</code>.</p>
+  </section>
+
+  <div class="admin-layout">
+
+    <!-- Existing essays -->
+    <section class="admin-section">
+      <h2>Existing Essays</h2>
+      <table class="essay-table">
+        <thead>
+          <tr>
+            <th>Order</th>
+            <th>Title</th>
+            <th>Condensed</th>
+            <th>Interactive</th>
+            <th>PDF</th>
+          </tr>
+        </thead>
+        <tbody>
+          {essays.map(e => (
+            <tr>
+              <td class="col-order">{e.data.order}</td>
+              <td>
+                <a href={`/essays/${e.id}`}>{e.data.title}</a>
+                <span class="essay-id">/{e.id}</span>
+              </td>
+              <td class="col-check">{e.body ? '✓' : '—'}</td>
+              <td class="col-check">{e.data.complex_page ? <a href={e.data.complex_page}>↗</a> : '—'}</td>
+              <td class="col-check">{e.data.pdf ? <a href={e.data.pdf} target="_blank">↓</a> : '—'}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </section>
+
+    <!-- New essay form -->
+    <section class="admin-section">
+      <h2>Add New Essay</h2>
+      <form id="essay-form" class="essay-form">
+
+        <div class="field">
+          <label for="f-slug">File name (slug) <span class="req">*</span></label>
+          <input id="f-slug" type="text" placeholder="my-essay-title" required
+            pattern="[a-z0-9\-]+" title="Lowercase letters, numbers, and hyphens only" />
+          <p class="hint">Lowercase, hyphens only — becomes the URL <code>/essays/<span class="slug-preview">my-essay-title</span></code></p>
+        </div>
+
+        <div class="field">
+          <label for="f-title">Title <span class="req">*</span></label>
+          <input id="f-title" type="text" placeholder="The Essay Title" required />
+        </div>
+
+        <div class="field">
+          <label for="f-summary">Summary (shown on home page card) <span class="req">*</span></label>
+          <textarea id="f-summary" rows="2" placeholder="One or two sentences describing the essay." required></textarea>
+        </div>
+
+        <div class="field">
+          <label for="f-order">Order <span class="req">*</span></label>
+          <input id="f-order" type="number" value="10" min="1" required />
+          <p class="hint">Lower numbers appear first on the home page.</p>
+        </div>
+
+        <div class="field">
+          <label for="f-year">Year <span class="req">*</span></label>
+          <input id="f-year" type="number" value={new Date().getFullYear()} min="2000" required />
+        </div>
+
+        <div class="field">
+          <label for="f-figure">Figure path <span class="optional">(optional)</span></label>
+          <input id="f-figure" type="text" placeholder="/essays/my-essay/figure.svg" />
+          <p class="hint">Drop the file at <code>{'public/essays/{slug}/figure.svg'}</code></p>
+        </div>
+
+        <div class="field">
+          <label for="f-complex">Complex interactive page URL <span class="optional">(optional)</span></label>
+          <input id="f-complex" type="text" placeholder="/projects/my-essay" />
+          <p class="hint">URL of the full interactive version — leave blank until that page exists.</p>
+        </div>
+
+        <div class="field">
+          <label for="f-pdf">PDF path <span class="optional">(optional)</span></label>
+          <input id="f-pdf" type="text" placeholder="/essays/my-essay/full.pdf" />
+          <p class="hint">Drop the file at <code>{'public/essays/{slug}/full.pdf'}</code></p>
+        </div>
+
+        <div class="field">
+          <label for="f-body">Condensed essay body (Markdown) <span class="req">*</span></label>
+          <textarea id="f-body" rows="14" placeholder="## Introduction&#10;&#10;Write the condensed version here using Markdown..." required></textarea>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn-primary">Generate &amp; Download .md file</button>
+          <button type="button" id="preview-btn" class="btn-secondary">Preview markdown</button>
+        </div>
+      </form>
+
+      <div id="preview-box" class="preview-box" hidden>
+        <div class="preview-box__header">
+          <span>Generated markdown</span>
+          <button id="copy-btn" class="btn-copy">Copy</button>
+        </div>
+        <pre id="preview-content"></pre>
+      </div>
+    </section>
+
+  </div>
+</BaseLayout>
+
+<style>
+  .admin-header {
+    padding: 3rem 0 2rem;
+  }
+
+  .admin-intro {
+    color: var(--color-text-muted);
+    font-size: 0.95rem;
+    line-height: 1.6;
+    margin-top: 0.5rem;
+  }
+
+  .admin-intro code {
+    font-family: monospace;
+    font-size: 0.85em;
+    background: var(--color-bg-secondary);
+    padding: 0.1em 0.35em;
+    border-radius: 3px;
+  }
+
+  .admin-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 3rem;
+    padding-bottom: 4rem;
+  }
+
+  .admin-section h2 {
+    font-size: 1.1rem;
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  /* Table */
+  .essay-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+  }
+
+  .essay-table th {
+    text-align: left;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-muted);
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .essay-table td {
+    padding: 0.6rem 0.75rem;
+    border-bottom: 1px solid var(--color-border);
+    vertical-align: top;
+  }
+
+  .essay-table td a {
+    color: var(--color-accent);
+  }
+
+  .col-order { width: 60px; color: var(--color-text-muted); }
+  .col-check { width: 80px; text-align: center; }
+
+  .essay-id {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    font-family: monospace;
+  }
+
+  /* Form */
+  .essay-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    max-width: 680px;
+  }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .field label {
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+
+  .req { color: var(--color-accent); }
+  .optional { color: var(--color-text-muted); font-weight: 400; font-size: 0.8em; }
+
+  .field input,
+  .field textarea {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--color-border);
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-family: inherit;
+    font-size: 0.9rem;
+    border-radius: 0;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .field input:focus,
+  .field textarea:focus {
+    outline: 2px solid var(--color-accent);
+    outline-offset: -1px;
+  }
+
+  .field textarea {
+    font-family: monospace;
+    resize: vertical;
+  }
+
+  .hint {
+    font-size: 0.78rem;
+    color: var(--color-text-muted);
+    margin: 0;
+  }
+
+  .hint code {
+    font-family: monospace;
+    font-size: 0.9em;
+  }
+
+  .form-actions {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    padding-top: 0.5rem;
+  }
+
+  .btn-primary {
+    padding: 0.6rem 1.25rem;
+    background: var(--color-accent);
+    color: white;
+    border: none;
+    font-size: 0.875rem;
+    cursor: pointer;
+    font-family: inherit;
+  }
+
+  .btn-primary:hover { opacity: 0.85; }
+
+  .btn-secondary {
+    padding: 0.6rem 1.25rem;
+    background: none;
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+    font-size: 0.875rem;
+    cursor: pointer;
+    font-family: inherit;
+  }
+
+  .btn-secondary:hover { border-color: var(--color-accent); color: var(--color-accent); }
+
+  /* Preview */
+  .preview-box {
+    margin-top: 1.5rem;
+    border: 1px solid var(--color-border);
+    max-width: 680px;
+  }
+
+  .preview-box__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0.75rem;
+    background: var(--color-bg-secondary);
+    border-bottom: 1px solid var(--color-border);
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+  }
+
+  .btn-copy {
+    padding: 0.2rem 0.6rem;
+    background: none;
+    border: 1px solid var(--color-border);
+    font-size: 0.75rem;
+    cursor: pointer;
+    font-family: inherit;
+    color: var(--color-text);
+  }
+
+  .btn-copy:hover { border-color: var(--color-accent); color: var(--color-accent); }
+
+  #preview-content {
+    padding: 1rem;
+    font-family: monospace;
+    font-size: 0.8rem;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-word;
+    margin: 0;
+    max-height: 400px;
+    overflow-y: auto;
+  }
+</style>
+
+<script>
+  const slugInput = document.getElementById('f-slug') as HTMLInputElement;
+  const slugPreview = document.querySelector('.slug-preview') as HTMLElement;
+  const form = document.getElementById('essay-form') as HTMLFormElement;
+  const previewBox = document.getElementById('preview-box') as HTMLElement;
+  const previewContent = document.getElementById('preview-content') as HTMLElement;
+  const previewBtn = document.getElementById('preview-btn') as HTMLButtonElement;
+  const copyBtn = document.getElementById('copy-btn') as HTMLButtonElement;
+
+  slugInput.addEventListener('input', () => {
+    slugPreview.textContent = slugInput.value || 'my-essay-title';
+  });
+
+  function buildMarkdown(): string {
+    const title = (document.getElementById('f-title') as HTMLInputElement).value.trim();
+    const summary = (document.getElementById('f-summary') as HTMLTextAreaElement).value.trim();
+    const order = (document.getElementById('f-order') as HTMLInputElement).value.trim();
+    const year = (document.getElementById('f-year') as HTMLInputElement).value.trim();
+    const figure = (document.getElementById('f-figure') as HTMLInputElement).value.trim();
+    const complex = (document.getElementById('f-complex') as HTMLInputElement).value.trim();
+    const pdf = (document.getElementById('f-pdf') as HTMLInputElement).value.trim();
+    const body = (document.getElementById('f-body') as HTMLTextAreaElement).value.trim();
+
+    const lines = [
+      '---',
+      `title: "${title}"`,
+      'status: active',
+      `year_start: ${year}`,
+      `summary: "${summary}"`,
+      `order: ${order}`,
+    ];
+    if (figure) lines.push(`figure: "${figure}"`);
+    if (complex) lines.push(`complex_page: "${complex}"`);
+    if (pdf) lines.push(`pdf: "${pdf}"`);
+    lines.push('---', '', body);
+
+    return lines.join('\n');
+  }
+
+  previewBtn.addEventListener('click', () => {
+    previewContent.textContent = buildMarkdown();
+    previewBox.hidden = false;
+    previewBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  });
+
+  copyBtn.addEventListener('click', () => {
+    navigator.clipboard.writeText(previewContent.textContent ?? '').then(() => {
+      copyBtn.textContent = 'Copied!';
+      setTimeout(() => { copyBtn.textContent = 'Copy'; }, 2000);
+    });
+  });
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const slug = slugInput.value.trim();
+    const markdown = buildMarkdown();
+    const blob = new Blob([markdown], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${slug}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
+
+    previewContent.textContent = markdown;
+    previewBox.hidden = false;
+  });
+</script>

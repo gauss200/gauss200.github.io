@@ -1,0 +1,114 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getEntry, render } from 'astro:content';
+
+const home = await getEntry('pages', 'home');
+const { Content } = await render(home!);
+const { title, subtitle, intro, photo } = home!.data;
+---
+<BaseLayout title="About">
+  <section class="hero">
+    <div class="hero__text">
+      <h1>{title}</h1>
+      {subtitle && <p class="hero__subtitle">{subtitle}</p>}
+      {intro && <p class="hero__intro">{intro}</p>}
+    </div>
+    {photo && (
+      <div class="hero__photo">
+        <img src={photo} alt={title} />
+      </div>
+    )}
+  </section>
+
+  <hr />
+
+  <section class="about">
+    <Content />
+  </section>
+
+  <hr />
+
+  <section class="contact-content">
+    <div class="card">
+      <h3>Get in Touch</h3>
+      <ul class="contact-list">
+        <li>
+          <strong>Google Scholar:</strong>
+          <a href="https://scholar.google.com/citations?user=PDhplXsAAAAJ" target="_blank" rel="noopener">
+            Warren B Jackson
+          </a>
+        </li>
+        <li>
+          <strong>ResearchGate:</strong>
+          <a href="https://www.researchgate.net/profile/Warren-Jackson-4" target="_blank" rel="noopener">
+            Warren Jackson
+          </a>
+        </li>
+      </ul>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .hero {
+    padding: 3rem 0 2rem;
+    display: flex;
+    gap: 2rem;
+    align-items: flex-start;
+  }
+
+  .hero__text {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .hero h1 {
+    margin-bottom: 0.25rem;
+  }
+
+  .hero__subtitle {
+    font-size: 1rem;
+    color: var(--color-text-muted);
+    margin-bottom: 1.5rem;
+    font-style: italic;
+  }
+
+  .hero__intro {
+    color: var(--color-text);
+    font-size: 1rem;
+    line-height: 1.7;
+  }
+
+  .hero__photo {
+    flex-shrink: 0;
+    width: 200px;
+    border: 1px solid var(--color-border);
+  }
+
+  .hero__photo img {
+    width: 100%;
+    display: block;
+  }
+
+  .about :global(h2) {
+    margin-bottom: 0.75rem;
+  }
+
+  .about :global(p) {
+    margin-bottom: 1rem;
+  }
+
+  .contact-content { max-width: 600px; }
+  .contact-list { list-style: none; }
+  .contact-list li { padding: 0.75rem 0; border-bottom: 1px solid var(--color-border); }
+
+  @media (max-width: 600px) {
+    .hero {
+      flex-direction: column-reverse;
+      padding: 2rem 0 1.5rem;
+    }
+    .hero__photo {
+      width: 140px;
+    }
+  }
+</style>

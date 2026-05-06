@@ -36,7 +36,31 @@ const projects = defineCollection({
     year_end: z.union([z.number(), z.string(), z.null()]).optional(),
     summary: z.string(),
     order: z.number().default(0),
-    image: z.string().optional(),
+    figure: z.string().optional(),
+    complex_page: z.string().optional(),
+    pdf: z.string().optional(),
+  }),
+});
+
+const essays = defineCollection({
+  loader: glob({ pattern: '**/*.md', base: './src/content/essays' }),
+  schema: z.object({
+    title: z.string(),
+    status: z.enum(['active', 'completed']),
+    year_start: z.number(),
+    year_end: z.union([z.number(), z.string(), z.null()]).optional(),
+    summary: z.string(),
+    order: z.number().default(0),
+    figure: z.string().optional(),
+    complex_page: z.string().optional(),
+    pdf: z.string().optional(),
+  }),
+});
+
+const essays_detailed = defineCollection({
+  loader: glob({ pattern: '**/*.md', base: './src/content/essays_detailed' }),
+  schema: z.object({
+    title: z.string(),
   }),
 });
 
@@ -69,4 +93,4 @@ const diagram_sections = defineCollection({
   }),
 });
 
-export const collections = { publications, patents, projects, hobbies, pages, diagram_sections };
+export const collections = { publications, patents, projects, essays, essays_detailed, hobbies, pages, diagram_sections };

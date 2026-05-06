@@ -3,10 +3,52 @@ backend:
   repo: gauss200/gauss200.github.io
   branch: main
 
-media_folder: public/images
-public_folder: /images
+media_folder: public/essays
+public_folder: /essays
 
 collections:
+  - name: essays
+    label: "Essays"
+    folder: src/content/essays
+    create: true
+    slug: "{{slug}}"
+    fields:
+      - { label: Title, name: title, widget: string }
+      - label: Status
+        name: status
+        widget: select
+        options: ["active", "completed"]
+        default: active
+      - { label: Start Year, name: year_start, widget: number, value_type: int }
+      - { label: End Year, name: year_end, widget: string, required: false }
+      - { label: Summary (shown on home page card), name: summary, widget: text }
+      - { label: Display Order, name: order, widget: number, value_type: int, default: 10 }
+      - label: "Card Figure"
+        name: figure
+        widget: string
+        required: false
+        hint: "Path to the image shown on the home page card, e.g. /essays/my-essay/figure.svg"
+      - label: "Full Interactive Page URL"
+        name: complex_page
+        widget: string
+        required: false
+        hint: "URL of the complete interactive version, e.g. /projects/my-essay"
+      - label: "PDF Path"
+        name: pdf
+        widget: string
+        required: false
+        hint: "Path to the PDF in public/essays/{slug}/full.pdf, e.g. /essays/my-essay/full.pdf"
+      - { label: "Condensed Version (Markdown)", name: body, widget: markdown }
+
+  - name: essays_detailed
+    label: "Essays — Detailed Versions"
+    folder: src/content/essays_detailed
+    create: true
+    slug: "{{slug}}"
+    fields:
+      - { label: Title, name: title, widget: string }
+      - { label: "Full Text (Markdown)", name: body, widget: markdown }
+
   - name: pages
     label: Pages
     folder: src/content/pages
@@ -32,7 +74,6 @@ collections:
       - { label: DOI, name: doi, widget: string, required: false }
       - { label: Abstract, name: abstract, widget: text, required: false }
       - { label: Featured, name: featured, widget: boolean, default: false }
-      - { label: Image, name: image, widget: image, required: false }
       - { label: Body, name: body, widget: markdown }
 
   - name: patents
@@ -49,21 +90,6 @@ collections:
       - { label: Abstract, name: abstract, widget: text, required: false }
       - { label: Body, name: body, widget: markdown }
 
-  - name: projects
-    label: "Research Projects"
-    folder: src/content/projects
-    create: true
-    slug: "{{slug}}"
-    fields:
-      - { label: Title, name: title, widget: string }
-      - { label: Status, name: status, widget: select, options: ["active", "completed"] }
-      - { label: Start Year, name: year_start, widget: number, value_type: int }
-      - { label: End Year, name: year_end, widget: string, required: false }
-      - { label: Summary, name: summary, widget: text }
-      - { label: Display Order, name: order, widget: number, value_type: int, default: 0 }
-      - { label: Image, name: image, widget: image, required: false }
-      - { label: Body, name: body, widget: markdown }
-
   - name: diagram_sections
     label: "Diagram Sections (Quantum Foundations)"
     folder: src/content/diagram_sections
@@ -75,30 +101,18 @@ collections:
         name: diagram
         widget: select
         options:
-          - { label: "Two Coupled Modes — Fields & Envelopes", value: "TwoModeCoupler" }
+          - { label: "Two Coupled Modes", value: "TwoModeCoupler" }
           - { label: "Co-Propagating Coupled Modes", value: "CoPropagatingModes" }
-          - { label: "Coupled Waveguides — Energy Transfer", value: "CoupledWaveguides" }
+          - { label: "Coupled Waveguides", value: "CoupledWaveguides" }
           - { label: "Counter-Propagating Waves", value: "CounterPropagating" }
-          - { label: "Quantum Tunneling ↔ Evanescent Coupling", value: "QuantumTunneling" }
+          - { label: "Quantum Tunneling", value: "QuantumTunneling" }
           - { label: "Quantum Measurement", value: "QuantumMeasurement" }
           - { label: "Periodic Boundary Conditions", value: "PeriodicCoupledModes" }
           - { label: "Coupling to a Continuum", value: "ContinuumDecay" }
           - { label: "EPR Experiment", value: "EPRExperiment" }
           - { label: "Fundamental Theorem of Calculus", value: "FundamentalTheorem" }
-          - { label: "Action Quantization in Phase Space", value: "ActionQuantization" }
-          - { label: "Double Slit — Measurement as Overlap Integral", value: "DoubleSlit" }
-          - { label: "Retrocausal Self-Consistency Loop", value: "RetrocausalLoop" }
-      - { label: Display Order, name: order, widget: number, value_type: int, default: 0 }
-      - { label: Body, name: body, widget: markdown }
-
-  - name: hobbies
-    label: Hobbies
-    folder: src/content/hobbies
-    create: true
-    slug: "{{slug}}"
-    fields:
-      - { label: Title, name: title, widget: string }
-      - { label: Summary, name: summary, widget: text }
-      - { label: Image, name: image, widget: image, required: false }
+          - { label: "Action Quantization", value: "ActionQuantization" }
+          - { label: "Double Slit", value: "DoubleSlit" }
+          - { label: "Completeness Relation", value: "CompletenessRelation" }
       - { label: Display Order, name: order, widget: number, value_type: int, default: 0 }
       - { label: Body, name: body, widget: markdown }

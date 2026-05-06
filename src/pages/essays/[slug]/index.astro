@@ -1,0 +1,184 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import { getCollection, render } from 'astro:content';
+
+export async function getStaticPaths() {
+  const essays = await getCollection('essays');
+  const detailed = await getCollection('essays_detailed');
+  const detailedIds = new Set(detailed.map(d => d.id));
+  return essays
+    .filter(e => !e.id.startsWith('test'))
+    .map((essay) => ({
+      params: { slug: essay.id },
+      props: { essay, hasDetailed: detailedIds.has(essay.id) },
+    }));
+}
+
+const { essay, hasDetailed } = Astro.props;
+const { Content } = await render(essay);
+const { title, summary, complex_page, pdf } = essay.data;
+
+const hasExtras = complex_page || pdf;
+---
+<BaseLayout title={title}>
+  <article class="essay-page">
+    <a href="/" class="back-link">← All essays</a>
+
+    <header class="essay-page__header">
+      <h1>{title}</h1>
+      <p class="essay-page__summary">{summary}</p>
+    </header>
+
+    {(hasExtras || hasDetailed) && (
+      <div class="essay-page__links">
+        {hasDetailed && (
+          <a href={`/essays/${essay.id}/detailed`} class="essay-link essay-link--detailed">
+            <span class="essay-link__label">Detailed version</span>
+            <span class="essay-link__arrow">→</span>
+          </a>
+        )}
+        {complex_page && (
+          <a href={complex_page} class="essay-link essay-link--complex">
+            <span class="essay-link__label">Full interactive version</span>
+            <span class="essay-link__arrow">→</span>
+          </a>
+        )}
+        {pdf && (
+          <a href={pdf} class="essay-link essay-link--pdf" target="_blank" rel="noopener">
+            <span class="essay-link__label">Download PDF</span>
+            <span class="essay-link__arrow">↓</span>
+          </a>
+        )}
+      </div>
+    )}
+
+    <div class="essay-page__body">
+      <Content />
+    </div>
+
+    {(hasExtras || hasDetailed) && (
+      <footer class="essay-page__footer">
+        {hasDetailed && (
+          <a href={`/essays/${essay.id}/detailed`} class="essay-link essay-link--detailed">
+            <span class="essay-link__label">Detailed version</span>
+            <span class="essay-link__arrow">→</span>
+          </a>
+        )}
+        {complex_page && (
+          <a href={complex_page} class="essay-link essay-link--complex">
+            <span class="essay-link__label">Full interactive version</span>
+            <span class="essay-link__arrow">→</span>
+          </a>
+        )}
+        {pdf && (
+          <a href={pdf} class="essay-link essay-link--pdf" target="_blank" rel="noopener">
+            <span class="essay-link__label">Download PDF</span>
+            <span class="essay-link__arrow">↓</span>
+          </a>
+        )}
+      </footer>
+    )}
+  </article>
+</BaseLayout>
+
+<style>
+  .essay-page {
+    padding: 2rem 0 4rem;
+    max-width: 720px;
+  }
+
+  .back-link {
+    display: inline-block;
+    margin-bottom: 1.75rem;
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+    text-decoration: none;
+  }
+
+  .back-link:hover {
+    color: var(--color-accent);
+  }
+
+  .essay-page__header {
+    margin-bottom: 1.5rem;
+  }
+
+  .essay-page__header h1 {
+    font-size: clamp(1.4rem, 4vw, 1.9rem);
+    line-height: 1.25;
+    margin-bottom: 0.6rem;
+  }
+
+  .essay-page__summary {
+    font-size: 1rem;
+    color: var(--color-text-muted);
+    line-height: 1.6;
+  }
+
+  .essay-page__links {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-bottom: 2rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .essay-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--color-border);
+    font-size: 0.85rem;
+    text-decoration: none;
+    transition: border-color 0.15s, color 0.15s;
+  }
+
+  .essay-link--detailed {
+    color: var(--color-text);
+    border-color: var(--color-border);
+  }
+
+  .essay-link--complex {
+    color: var(--color-accent);
+    border-color: var(--color-accent);
+  }
+
+  .essay-link--pdf {
+    color: var(--color-text-muted);
+  }
+
+  .essay-link:hover {
+    color: var(--color-accent);
+    border-color: var(--color-accent);
+  }
+
+  .essay-link__arrow {
+    font-size: 1rem;
+  }
+
+  .essay-page__body {
+    font-size: 1rem;
+    line-height: 1.8;
+  }
+
+  .essay-page__body :global(h2) {
+    font-size: 1.2rem;
+    margin-top: 2rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .essay-page__body :global(p) {
+    margin-bottom: 1rem;
+  }
+
+  .essay-page__footer {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-top: 3rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--color-border);
+  }
+</style>

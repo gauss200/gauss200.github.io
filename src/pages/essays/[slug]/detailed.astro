@@ -1,0 +1,182 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import { getCollection, getEntry, render } from 'astro:content';
+
+export async function getStaticPaths() {
+  const detailed = await getCollection('essays_detailed');
+  return detailed.map((entry) => ({
+    params: { slug: entry.id },
+    props: { entry },
+  }));
+}
+
+const { entry } = Astro.props;
+const { slug } = Astro.params;
+
+const essay = await getEntry('essays', slug);
+const { Content } = await render(entry);
+const { title } = entry.data;
+const summary = essay?.data.summary;
+const complex_page = essay?.data.complex_page;
+const pdf = essay?.data.pdf;
+
+const hasExtras = complex_page || pdf;
+---
+<BaseLayout title={`${title} — Detailed`}>
+  <article class="essay-page">
+    <a href={`/essays/${slug}`} class="back-link">← Condensed version</a>
+
+    <header class="essay-page__header">
+      <h1>{title}</h1>
+      {summary && <p class="essay-page__summary">{summary}</p>}
+      <span class="essay-page__badge">Detailed</span>
+    </header>
+
+    {hasExtras && (
+      <div class="essay-page__links">
+        {complex_page && (
+          <a href={complex_page} class="essay-link essay-link--complex">
+            <span class="essay-link__label">Full interactive version</span>
+            <span class="essay-link__arrow">→</span>
+          </a>
+        )}
+        {pdf && (
+          <a href={pdf} class="essay-link essay-link--pdf" target="_blank" rel="noopener">
+            <span class="essay-link__label">Download PDF</span>
+            <span class="essay-link__arrow">↓</span>
+          </a>
+        )}
+      </div>
+    )}
+
+    <div class="essay-page__body">
+      <Content />
+    </div>
+
+    {hasExtras && (
+      <footer class="essay-page__footer">
+        {complex_page && (
+          <a href={complex_page} class="essay-link essay-link--complex">
+            <span class="essay-link__label">Full interactive version</span>
+            <span class="essay-link__arrow">→</span>
+          </a>
+        )}
+        {pdf && (
+          <a href={pdf} class="essay-link essay-link--pdf" target="_blank" rel="noopener">
+            <span class="essay-link__label">Download PDF</span>
+            <span class="essay-link__arrow">↓</span>
+          </a>
+        )}
+      </footer>
+    )}
+  </article>
+</BaseLayout>
+
+<style>
+  .essay-page {
+    padding: 2rem 0 4rem;
+    max-width: 720px;
+  }
+
+  .back-link {
+    display: inline-block;
+    margin-bottom: 1.75rem;
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+    text-decoration: none;
+  }
+
+  .back-link:hover {
+    color: var(--color-accent);
+  }
+
+  .essay-page__header {
+    margin-bottom: 1.5rem;
+  }
+
+  .essay-page__header h1 {
+    font-size: clamp(1.4rem, 4vw, 1.9rem);
+    line-height: 1.25;
+    margin-bottom: 0.6rem;
+  }
+
+  .essay-page__summary {
+    font-size: 1rem;
+    color: var(--color-text-muted);
+    line-height: 1.6;
+    margin-bottom: 0.5rem;
+  }
+
+  .essay-page__badge {
+    display: inline-block;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 0.2rem 0.55rem;
+    border: 1px solid var(--color-border);
+    color: var(--color-text-muted);
+    margin-top: 0.5rem;
+  }
+
+  .essay-page__links {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-bottom: 2rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .essay-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--color-border);
+    font-size: 0.85rem;
+    text-decoration: none;
+    transition: border-color 0.15s, color 0.15s;
+  }
+
+  .essay-link--complex {
+    color: var(--color-accent);
+    border-color: var(--color-accent);
+  }
+
+  .essay-link--pdf {
+    color: var(--color-text-muted);
+  }
+
+  .essay-link:hover {
+    color: var(--color-accent);
+    border-color: var(--color-accent);
+  }
+
+  .essay-link__arrow {
+    font-size: 1rem;
+  }
+
+  .essay-page__body {
+    font-size: 1rem;
+    line-height: 1.8;
+  }
+
+  .essay-page__body :global(h2) {
+    font-size: 1.2rem;
+    margin-top: 2rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .essay-page__body :global(p) {
+    margin-bottom: 1rem;
+  }
+
+  .essay-page__footer {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-top: 3rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--color-border);
+  }
+</style>

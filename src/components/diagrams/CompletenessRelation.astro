@@ -1,0 +1,390 @@
+---
+// Completeness relation: N eigenfunction loops sharing a common initial
+// boundary condition but each terminating at a distinct final eigenstate.
+// The measurement selects one loop (the ontic loop); all others are
+// counterfactual.  Forward amplitude ψₙ travels left→right; the conjugate
+// ψₙ* returns right→left, closing the self-consistent loop.
+// Σₙ |n⟩⟨n| = Î expresses the completeness of the eigenstate set.
+---
+<div class="diagram-container">
+  <div class="diagram-controls">
+    <label>
+      Eigenstates (N):
+      <input type="range" id="cr-n" min="3" max="7" step="1" value="5" />
+      <span id="cr-n-val">5</span>
+    </label>
+    <label>
+      Measured outcome:
+      <input type="range" id="cr-sel" min="0" max="4" step="1" value="2" />
+      <span id="cr-sel-val">n = 2</span>
+    </label>
+  </div>
+  <canvas id="completeness-relation" width="800" height="500"></canvas>
+</div>
+
+<style>
+  .diagram-container {
+    margin: 2rem 0;
+    padding: 1.5rem;
+    background: var(--color-card-bg);
+    border-radius: var(--border-radius);
+    box-shadow: 0 2px 8px var(--color-card-shadow);
+  }
+
+  .diagram-controls {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .diagram-controls label {
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  canvas {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: var(--border-radius);
+  }
+</style>
+
+<script>
+  const canvas    = document.getElementById('completeness-relation') as HTMLCanvasElement;
+  const ctx       = canvas.getContext('2d')!;
+  const nSlider   = document.getElementById('cr-n')   as HTMLInputElement;
+  const nValEl    = document.getElementById('cr-n-val')!;
+  const selSlider = document.getElementById('cr-sel') as HTMLInputElement;
+  const selValEl  = document.getElementById('cr-sel-val')!;
+
+  let animT     = 0;
+  let animPhase = 0;   // 0 = forward ψ, 1 = return ψ*
+  let animFrame = 0;
+  let isVisible = false;
+
+  nSlider.addEventListener('input', () => {
+    const N = parseInt(nSlider.value);
+    nValEl.textContent = String(N);
+    selSlider.max = String(N - 1);
+    if (parseInt(selSlider.value) >= N) selSlider.value = String(N - 1);
+    selValEl.textContent = 'n = ' + selSlider.value;
+    draw();
+  });
+  selSlider.addEventListener('input', () => {
+    selValEl.textContent = 'n = ' + selSlider.value;
+    draw();
+  });
+
+  // ── Bezier helpers ────────────────────────────────────────────────────────
+
+  function qPt(t: number, ax: number, ay: number, cx: number, cy: number, bx: number, by: number) {
+    const mt = 1 - t;
+    return { x: mt*mt*ax + 2*mt*t*cx + t*t*bx,
+             y: mt*mt*ay + 2*mt*t*cy + t*t*by };
+  }
+
+  function qTan(t: number, ax: number, ay: number, cx: number, cy: number, bx: number, by: number) {
+    const tx = 2*(1-t)*(cx-ax) + 2*t*(bx-cx);
+    const ty = 2*(1-t)*(cy-ay) + 2*t*(by-cy);
+    const l  = Math.sqrt(tx*tx + ty*ty);
+    return { x: l > 0 ? tx/l : 1, y: l > 0 ? ty/l : 0 };
+  }
+
+  function arrowHead(x: number, y: number, ang: number, sz: number, col: string) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(ang);
+    ctx.fillStyle = col;
+    ctx.beginPath();
+    ctx.moveTo(sz, 0);
+    ctx.lineTo(-sz*0.8,  sz*0.42);
+    ctx.lineTo(-sz*0.8, -sz*0.42);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // ── Loop geometry ─────────────────────────────────────────────────────────
+
+  function loopGeom(n: number, N: number, xA: number, yA: number, xB_final: number, yB_n: number, loopOff: number) {
+    const xB = xB_final, yB = yB_n;
+    const xMid = (xA+xB)/2, yMid = (yA+yB)/2;
+    const ddx = xB-xA, ddy = yB-yA;
+    const len = Math.sqrt(ddx*ddx + ddy*ddy);
+    const px = -ddy/len, py = ddx/len;  // 90° CCW perpendicular
+    return {
+      xA, yA, xB, yB,
+      cfx: xMid + px*loopOff, cfy: yMid + py*loopOff,
+      crx: xMid - px*loopOff, cry: yMid - py*loopOff,
+    };
+  }
+
+  // ── Draw ──────────────────────────────────────────────────────────────────
+
+  function draw() {
+    const W = canvas.width, H = canvas.height;
+    const N        = parseInt(nSlider.value);
+    const selected = parseInt(selSlider.value);
+
+    const isDark = document.documentElement.getAttribute('data-theme') === 'ds9';
+
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = isDark ? '#05050f' : '#fafafa';
+    ctx.fillRect(0, 0, W, H);
+
+    const textColor  = isDark ? '#c8cad8' : '#1a1a1a';
+    const mutedColor = isDark ? '#7a7e9a' : '#888888';
+    const colorRet   = isDark ? '#33cccc' : '#2a9d8f';
+    const colorInit  = isDark ? '#cc99ff' : '#7c3aed';
+
+    const DARK_PAL  = ['#e8a640','#64b5f6','#81c784','#f48fb1','#ce93d8','#80deea','#ffcc80'];
+    const LIGHT_PAL = ['#c4621d','#2a79b8','#2a7a4f','#b5375a','#7b2d8b','#006b7b','#b36200'];
+    const palette   = isDark ? DARK_PAL : LIGHT_PAL;
+
+    const xInit   = 105;
+    const yCentre = H / 2;
+    const xFinal  = 648;
+    const maxSpan = H - 90;
+    const spacing = Math.min(70, maxSpan / Math.max(N - 1, 1));
+    const loopOff = Math.min(20, spacing * 0.27);
+    const yFirst  = yCentre - (N-1)*spacing/2;
+
+    // ── Time axis ──
+    ctx.strokeStyle = isDark ? '#1a1a4a' : '#e0e0e0';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(xInit - 20, yCentre);
+    ctx.lineTo(xFinal + 5, yCentre);
+    ctx.stroke();
+    ctx.fillStyle = mutedColor;
+    ctx.font = '11px system-ui';
+    ctx.textAlign = 'left';
+    ctx.fillText('t \u2192', xFinal + 8, yCentre + 4);
+
+    // ── Header ──
+    ctx.fillStyle = textColor;
+    ctx.font = '13px system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText('Completeness relation:   \u03a3\u2099 |n\u27e9\u27e8n| = \u00ce', W/2, 24);
+    ctx.textAlign = 'left';
+
+    // ── Loops (counterfactuals first, selected on top) ──
+    let selG: ReturnType<typeof loopGeom> | null = null;
+
+    const order = Array.from({length: N}, (_, i) => i)
+      .filter(i => i !== selected)
+      .concat(selected);
+
+    for (const n of order) {
+      const isOntic = n === selected;
+      const yB = yFirst + n * spacing;
+      const g  = loopGeom(n, N, xInit, yCentre, xFinal, yB, loopOff);
+      const col = palette[n % palette.length];
+      if (isOntic) selG = g;
+
+      // Filled area for ontic loop
+      if (isOntic) {
+        ctx.globalAlpha = 0.07;
+        ctx.fillStyle = col;
+        ctx.beginPath();
+        ctx.moveTo(g.xA, g.yA);
+        ctx.quadraticCurveTo(g.cfx, g.cfy, g.xB, g.yB);
+        ctx.quadraticCurveTo(g.crx, g.cry, g.xA, g.yA);
+        ctx.closePath();
+        ctx.fill();
+        ctx.globalAlpha = 1.0;
+      }
+
+      ctx.globalAlpha = isOntic ? 1.0 : 0.22;
+      ctx.lineWidth   = isOntic ? 2.5 : 1.5;
+      if (!isOntic) ctx.setLineDash([7, 5]);
+
+      // Forward arc ψₙ
+      ctx.beginPath();
+      ctx.strokeStyle = col;
+      ctx.moveTo(g.xA, g.yA);
+      ctx.quadraticCurveTo(g.cfx, g.cfy, g.xB, g.yB);
+      ctx.stroke();
+
+      // Return arc ψₙ*
+      ctx.beginPath();
+      ctx.strokeStyle = colorRet;
+      ctx.moveTo(g.xB, g.yB);
+      ctx.quadraticCurveTo(g.crx, g.cry, g.xA, g.yA);
+      ctx.stroke();
+
+      ctx.setLineDash([]);
+      ctx.globalAlpha = isOntic ? 1.0 : 0.3;
+
+      // Arrowheads
+      const fMid = qPt(0.6, g.xA, g.yA, g.cfx, g.cfy, g.xB, g.yB);
+      const fTan = qTan(0.6, g.xA, g.yA, g.cfx, g.cfy, g.xB, g.yB);
+      arrowHead(fMid.x, fMid.y, Math.atan2(fTan.y, fTan.x), isOntic ? 7 : 5, col);
+
+      const rMid = qPt(0.6, g.xB, g.yB, g.crx, g.cry, g.xA, g.yA);
+      const rTan = qTan(0.6, g.xB, g.yB, g.crx, g.cry, g.xA, g.yA);
+      arrowHead(rMid.x, rMid.y, Math.atan2(rTan.y, rTan.x), isOntic ? 7 : 5, colorRet);
+
+      ctx.globalAlpha = 1.0;
+
+      // Final-state dot
+      ctx.beginPath();
+      ctx.fillStyle  = col;
+      ctx.globalAlpha = isOntic ? 1.0 : 0.35;
+      ctx.arc(g.xB, g.yB, isOntic ? 6 : 4, 0, Math.PI*2);
+      ctx.fill();
+      ctx.globalAlpha = 1.0;
+
+      // Labels
+      ctx.textAlign = 'left';
+      ctx.fillStyle = isOntic ? col : mutedColor;
+      ctx.font      = isOntic ? 'bold 12px system-ui' : '11px system-ui';
+      ctx.fillText('|n=' + n + '\u27e9', g.xB + 12, g.yB + 4);
+
+      if (isOntic) {
+        ctx.font = 'bold 10px system-ui';
+        ctx.fillText('ONTIC', g.xB + 12, g.yB + 17);
+      } else {
+        ctx.fillStyle = mutedColor;
+        ctx.font = 'italic 9px system-ui';
+        ctx.fillText('counterfactual', g.xB + 12, g.yB + 17);
+      }
+
+      // Path labels on ontic loop only
+      if (isOntic) {
+        const lf = qPt(0.38, g.xA, g.yA, g.cfx, g.cfy, g.xB, g.yB);
+        ctx.fillStyle = col;
+        ctx.font = 'italic 11px system-ui';
+        ctx.textAlign = 'center';
+        ctx.fillText('\u03c8' + n + ' \u2192', lf.x, lf.y - 10);
+
+        const lr = qPt(0.38, g.xB, g.yB, g.crx, g.cry, g.xA, g.yA);
+        ctx.fillStyle = colorRet;
+        ctx.fillText('\u2190 \u03c8' + n + '*', lr.x, lr.y + 15);
+        ctx.textAlign = 'left';
+      }
+    }
+
+    // ── Animated dot on ontic loop ──
+    if (selG) {
+      const dot = animPhase === 0
+        ? qPt(animT, selG.xA, selG.yA, selG.cfx, selG.cfy, selG.xB, selG.yB)
+        : qPt(animT, selG.xB, selG.yB, selG.crx, selG.cry, selG.xA, selG.yA);
+      const dotCol = animPhase === 0 ? palette[selected % palette.length] : colorRet;
+      ctx.fillStyle = dotCol;
+      ctx.globalAlpha = 0.35;
+      ctx.beginPath();
+      ctx.arc(dot.x, dot.y, 9, 0, Math.PI*2);
+      ctx.fill();
+      ctx.globalAlpha = 1.0;
+      ctx.beginPath();
+      ctx.arc(dot.x, dot.y, 5, 0, Math.PI*2);
+      ctx.fill();
+    }
+
+    // ── Initial condition node ──
+    ctx.beginPath();
+    ctx.fillStyle = colorInit;
+    ctx.arc(xInit, yCentre, 7, 0, Math.PI*2);
+    ctx.fill();
+    ctx.strokeStyle = colorInit;
+    ctx.lineWidth = 1.5;
+    ctx.globalAlpha = 0.4;
+    ctx.beginPath();
+    ctx.arc(xInit, yCentre, 13, 0, Math.PI*2);
+    ctx.stroke();
+    ctx.globalAlpha = 1.0;
+
+    ctx.fillStyle = colorInit;
+    ctx.font = 'bold 12px system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText('|\u03c8\u2080\u27e9', xInit, yCentre + 25);
+    ctx.font = '10px system-ui';
+    ctx.fillText('\u03a3\u2099 c\u2099|n\u27e9', xInit, yCentre + 38);
+
+    // ── Final-boundary dashed line ──
+    const yLast = yFirst + (N-1)*spacing;
+    ctx.strokeStyle = isDark ? '#2a2d4a' : '#d8d8d8';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3, 4]);
+    ctx.beginPath();
+    ctx.moveTo(xFinal, yFirst - 20);
+    ctx.lineTo(xFinal, yLast  + 20);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = mutedColor;
+    ctx.font = '10px system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText('Final boundary', xFinal + 42, yFirst - 22);
+    ctx.fillText('(measurement)', xFinal + 42, yFirst - 10);
+
+    // ── Bottom annotation ──
+    ctx.fillStyle = mutedColor;
+    ctx.font = 'italic 10px system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText(
+      'Measurement selects n\u202f=\u202f' + selected +
+      '  \u2014  P(n)\u202f=\u202f1/' + N + '\u202f=\u202f' + (1/N).toFixed(2) +
+      ' per eigenstate (equal superposition)',
+      W/2, H - 12
+    );
+
+    // ── Legend ──
+    const lx = 30, ly = H - 42;
+    ctx.textAlign = 'left';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([]);
+
+    ctx.strokeStyle = palette[selected % palette.length];
+    ctx.beginPath(); ctx.moveTo(lx, ly); ctx.lineTo(lx+28, ly); ctx.stroke();
+    arrowHead(lx+22, ly, 0, 6, palette[selected % palette.length]);
+    ctx.fillStyle = textColor;
+    ctx.font = '10px system-ui';
+    ctx.fillText('\u03c8\u2099 forward', lx+32, ly+4);
+
+    ctx.strokeStyle = colorRet;
+    ctx.beginPath(); ctx.moveTo(lx+120, ly); ctx.lineTo(lx+148, ly); ctx.stroke();
+    arrowHead(lx+142, ly, 0, 6, colorRet);
+    ctx.fillStyle = textColor;
+    ctx.fillText('\u03c8\u2099* return', lx+152, ly+4);
+
+    ctx.strokeStyle = mutedColor;
+    ctx.setLineDash([6, 4]);
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(lx+252, ly); ctx.lineTo(lx+280, ly); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = mutedColor;
+    ctx.fillText('counterfactual', lx+284, ly+4);
+  }
+
+  // ── Animation ─────────────────────────────────────────────────────────────
+
+  function animate() {
+    animT += 0.005;
+    if (animT >= 1) { animT = 0; animPhase = 1 - animPhase; }
+    draw();
+    if (isVisible) animFrame = requestAnimationFrame(animate);
+  }
+
+  // ── Visibility + initial render ───────────────────────────────────────────
+
+  const observer = new IntersectionObserver(([entry]) => {
+    const was = isVisible;
+    isVisible  = entry.isIntersecting;
+    if (isVisible && !was) {
+      animT = 0; animPhase = 0;
+      animFrame = requestAnimationFrame(animate);
+    } else if (!isVisible) {
+      cancelAnimationFrame(animFrame);
+    }
+  }, { threshold: 0.1 });
+  observer.observe(canvas.closest('.diagram-container')!);
+
+  // Draw once immediately so the canvas is never blank on first paint
+  draw();
+</script>
